@@ -1,0 +1,150 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlserver"
+  url      = "sqlserver://121.5.65.152:61433;initial catalog=TechReadyDB;user=sa;password=Mi821103.com;trustServerCertificate=true;"
+}
+
+model t_Code {
+  CodeKey      String    @id(map: "PK_T_CODE") @db.NVarChar(50)
+  CodeName     String?   @db.NVarChar(100)
+  CodeType     String?   @db.NVarChar(50)
+  DisplayIndex Int?
+  IsEnable     Boolean?
+  CreateDate   DateTime? @db.DateTime
+}
+
+model t_Comment {
+  KeyID      String    @id(map: "PK_T_COMMENT") @db.NVarChar(50)
+  CommentTxt String?   @db.NVarChar(500)
+  CreateDate DateTime? @db.DateTime
+  UserID     String?   @db.NVarChar(50)
+}
+
+model t_Fund {
+  FundKey    String    @id(map: "PK_T_FUND") @db.NVarChar(50)
+  FundType   String?   @db.NVarChar(50)
+  Money      Decimal?  @db.Decimal(10, 2)
+  CreateDate DateTime? @db.DateTime
+  UserID     String?   @db.NVarChar(50)
+}
+
+model t_FundHoldings {
+  StockCode          String   @db.NVarChar(50)
+  ReportDay          DateTime @db.DateTime
+  NumOfFund          Int?
+  TotalHoldings      Decimal? @db.Decimal(5, 2)
+  TotalValue         Decimal? @db.Decimal(5, 2)
+  PercentTotal       Decimal? @db.Decimal(3, 2)
+  PercentOutstanding Decimal? @db.Decimal(3, 2)
+
+  @@id([StockCode, ReportDay], map: "PK_t_FundHoldings")
+}
+
+model t_Log {
+  KeyID   String    @id(map: "PK_T_LOG") @db.NVarChar(128)
+  Target  String?   @db.NVarChar(50)
+  Content String?   @db.NVarChar(500)
+  LogType String?   @db.NVarChar(50)
+  LogDate DateTime? @db.DateTime
+}
+
+model t_Observer {
+  StockCode String    @id(map: "PK_t_Observer_1") @db.NVarChar(50)
+  Rate      String?   @db.NVarChar(50)
+  RatePrice String?   @db.NVarChar(50)
+  AddDate   DateTime  @db.DateTime
+  LastDate  DateTime? @db.DateTime
+  UserID    String?   @db.NVarChar(50)
+  PlanID    String?   @db.NVarChar(50)
+}
+
+model t_ObserverRule {
+  KeyID     Int     @id(map: "PK_T_OBSERVERRULE")
+  RuleName  String? @db.NVarChar(50)
+  RuleValue String? @db.NVarChar(50)
+  RuleType  String? @db.NVarChar(50)
+}
+
+model t_ObserverSys {
+  StockCode String    @id(map: "PK_T_OBSERVERSYS") @db.NVarChar(50)
+  Rate      String?   @db.NVarChar(50)
+  RatePrice String?   @db.NVarChar(50)
+  AddDate   DateTime? @db.DateTime
+  LastDate  DateTime? @db.DateTime
+}
+
+model t_Plan {
+  PlanID     String    @id(map: "PK_T_PLAN") @db.NVarChar(50)
+  PlanName   String?   @db.NVarChar(50)
+  CreateName DateTime? @db.DateTime
+}
+
+model t_SimTradeLog {
+  KeyID       String    @id(map: "PK_T_SIMTRADELOG") @db.NVarChar(128)
+  StockCode   String?   @db.NVarChar(50)
+  TradeDate   DateTime? @db.DateTime
+  TradePrice  Decimal?  @db.Decimal(10, 2)
+  TradeVolume Int?
+  Cost        Decimal?  @db.Decimal(10, 2)
+  CreateDate  DateTime? @db.DateTime
+  IsSell      Boolean?
+}
+
+model t_StockDayLog {
+  StockCode             String   @db.NVarChar(50)
+  SearchTime            DateTime @db.DateTime
+  CurrentPrice          Decimal? @db.Decimal(6, 2)
+  YesterdayClosingPrice Decimal? @db.Decimal(6, 2)
+  TodayOpeningPrice     Decimal? @db.Decimal(6, 2)
+  HighLowRate           String?  @db.NVarChar(50)
+  TodayMinPrice         Decimal? @db.Decimal(6, 2)
+  TodayMaxPrice         Decimal? @db.Decimal(6, 2)
+  HighLowPrice          String?  @db.NVarChar(50)
+  TradingVolume         String?  @db.NVarChar(50)
+  TradingPrice          String?  @db.NVarChar(50)
+  BidBuyPrice           Decimal? @db.Decimal(6, 2)
+  BidSellPrice          Decimal? @db.Decimal(6, 2)
+  SellBuyRate           String?  @db.NVarChar(50)
+
+  @@id([StockCode, SearchTime], map: "PK_T_STOCKDAYLOG1")
+}
+
+model t_StockDayReport {
+  StockCode       String   @db.NVarChar(50)
+  ReportDay       DateTime @db.DateTime
+  TodayOpenPrice  Decimal? @db.Decimal(6, 2)
+  TodayClosePrice Decimal? @db.Decimal(6, 2)
+  TodayMaxPrice   Decimal? @db.Decimal(6, 2)
+  TodayMinPrice   Decimal? @db.Decimal(6, 2)
+  Rate            String?  @db.NVarChar(50)
+  RatePrice       String?  @db.NVarChar(50)
+
+  @@id([StockCode, ReportDay], map: "PK_T_STOCKDAYREPORT")
+}
+
+model t_StockNameList {
+  StockCode  String    @id(map: "PK_T_STOCKNAMELIST") @db.NVarChar(50)
+  StockName  String?   @db.NVarChar(100)
+  LastUpdate DateTime? @db.DateTime
+}
+
+model t_TradeLog {
+  KeyID       String    @id(map: "PK_T_TRADELOG") @db.NVarChar(128)
+  StockCode   String?   @db.NVarChar(50)
+  TradeDate   DateTime? @db.DateTime
+  TradePrice  Decimal?  @db.Decimal(10, 2)
+  TradeVolume Int?
+  Cost        Decimal?  @db.Decimal(10, 2)
+  CreateDate  DateTime? @db.DateTime
+  IsSell      Boolean?
+  UserID      String?   @db.NVarChar(50)
+}
+
+model t_User {
+  UserID   String  @id(map: "PK_T_USER") @db.NVarChar(50)
+  UserName String? @db.NVarChar(50)
+  Password String? @db.NVarChar(50)
+}
