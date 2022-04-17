@@ -4,7 +4,7 @@ generator client {
 
 datasource db {
   provider = "sqlserver"
-  url      = "sqlserver://121.5.65.152:61433;initial catalog=TechReadyDB;user=sa;password=Mi821103.com;trustServerCertificate=true;"
+  url      = "sqlserver://127.0.0.1:1433;initial catalog=TechReadyDB;user=sa;password=password.com;trustServerCertificate=true;"
 }
 
 model t_Code {
