@@ -10,6 +10,7 @@ import { formatISO } from "date-fns";
 async function main() {
 
   // UpdateAllCodeName();
+  
   // var mStock =await GetStockNameByCode('sz002415');
 
   // console.log(mStock.StockName);
@@ -17,13 +18,11 @@ async function main() {
   // var res : t_StockNameList[]=await GetAllStockCode()
 
   // var res = await GetStockNameByCode("sh600741")
-
   // res.LastUpdate.setHours(res.LastUpdate.getHours() - 8);
   // console.log(res.LastUpdate.toString());
 
-  // var res ="TestInfo";
-  // console.log(res.indexOf("y"))
   runDayLog()
+  
 
 }
 
@@ -31,10 +30,10 @@ async function main() {
 async function runDayLog() {
 
   //判断当前时段是否需要执行任务
-  // if (isStopRunning()) {
-  //   // console.log("不在任务时段")
-  //   return;
-  // }
+  if (isStopRunning()) {
+    console.log("不在任务时段")
+    return;
+  }
 
   //获取库中所有stockcode
   var Lcodes = await GetAllStockCode()//数据库获取所有股票代码
@@ -52,7 +51,7 @@ function isStopRunning() {
   let dTime = new Date();
   // console.log('timestamp: ' + dTime.getHours());
   // console.log('timestamp: ' + dTime.getDay());
-  if (dTime.getDay() > 5) {//周六周日不需要运行
+  if (dTime.getDay() > 5 || dTime.getDay()<1) {//周六周日不需要运行
     return true;
   }
 
