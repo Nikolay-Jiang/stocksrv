@@ -1,4 +1,5 @@
-import { Prisma, PrismaClient, t_StockNameList } from '@prisma/client'
+import { Prisma, PrismaClient, t_StockDayLog, t_StockNameList, t_StockDayReport } from '@prisma/client'
+import { AnyRecord } from 'dns';
 import { GetStockCurrent2, Stock, GetStockCurrent } from './sinaStockInterface'
 const prisma = new PrismaClient();
 // export const testStr='lalalal'
@@ -9,20 +10,20 @@ export function GetTradeList(): any {
     return res;
 }
 
-//#region 
+//#region StockDayLog
 export async function AddStockDayLog(Lstock: Stock[]) {
 
-    let dTemp = new Date("2022-4-15 9:36:00")
-    console.log("开始写入..."+dTemp.toString())
+    let dTemp = new Date()
+    console.log("开始写入..." + dTemp.toString())
 
     for (let index = 0; index < Lstock.length; index++) {
 
         const element = Lstock[index];
-        if (element.stockname.indexOf("退")>=0) {//过滤已退市
+        if (element.stockname.indexOf("退") >= 0) {//过滤已退市
             continue;
         }
 
-        element.SearchTime.setHours(element.SearchTime.getHours()+8);//修正只存UTC 问题
+        element.SearchTime.setHours(element.SearchTime.getHours() + 8);//修正只存UTC 问题
 
         if (element.SearchTime.getHours() < dTemp.getHours()) {//判断停牌情况，9点会被记录一次，后续跳过
             continue;
@@ -46,10 +47,30 @@ export async function AddStockDayLog(Lstock: Stock[]) {
                 },
             })
         } catch (error) {
-            console.log("error:"+Lstock[index].stockcode+error)
+            console.log("error:" + Lstock[index].stockcode + error)
         }
-        
+
     }
+}
+
+export function GetStockDayLogForRpt(dBegin: Date, dEnd: Date): Promise<t_StockDayLog[]> {
+
+    dBegin = new Date(dBegin.getFullYear() + "-" + (dBegin.getMonth() + 1) + "-" + dBegin.getDate() + " " + "14:59:59");
+    dEnd = new Date(dEnd.getFullYear() + "-" + (dEnd.getMonth() + 1) + "-" + dEnd.getDate() + " " + "00:00:00")
+
+    //处理存取时只认utc 问题
+    dBegin.setHours(dBegin.getHours() + 8);
+    dEnd.setHours(dEnd.getHours() + 8);
+    return prisma.t_StockDayLog.findMany({
+        where: {
+            SearchTime: {
+                gte: dBegin,
+                lt: dEnd
+            }
+        }
+
+    })
+
 }
 
 
@@ -142,5 +163,39 @@ function GetSZCode(i: number): string {
 }
 
 
+
+//#endregion
+
+//#region StockDayReport
+export async function AddStockDayReport(mStockDayReport: t_StockDayReport) {
+    
+    try {
+        const res= await prisma.t_StockDayReport.create({
+            data: {
+                StockCode: mStockDayReport.StockCode,
+                ReportDay: mStockDayReport.ReportDay,
+                TodayOpenPrice: mStockDayReport.TodayOpenPrice,
+                TodayMaxPrice: mStockDayReport.TodayMaxPrice,
+                TodayMinPrice: mStockDayReport.TodayMinPrice,
+                TodayClosePrice: mStockDayReport.TodayClosePrice,
+                Rate: mStockDayReport.Rate,
+                RatePrice: mStockDayReport.RatePrice,
+                Memo: mStockDayReport.Memo,
+                TradingVol: mStockDayReport.TradingVol,
+                TradingPrice:mStockDayReport.TradingPrice,
+                TradingPriceAvg:mStockDayReport.TradingPriceAvg
+            },
+        })
+        // console.log(mStockDayReport.StockCode+"|"+mStockDayReport.ReportDay)
+    } catch (error) {
+        console.log(mStockDayReport.StockCode+"|"+mStockDayReport.Rate);    
+        console.log("error:"+error);
+    }
+    
+}
+
+export function GetStockDayReportList():any  {
+    return prisma.t_StockDayReport.findMany()
+}
 
 //#endregion
