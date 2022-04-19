@@ -11,11 +11,9 @@ async function main() {
   // UpdateAllCodeName();
 
 
-  var ReportDay = new Date();
-  ReportDay.setHours(8)
-  ReportDay.setMinutes(0)
-  ReportDay.setSeconds(0)
-  // console.log(ReportDay.toLocaleString())
+  var res=await GetStockCurrent("sz000780")
+
+  console.log(res.stockcode+"|" +res.TodayOpeningPrice+"|" +res.SearchTime.toString())
 
   // const res= await GetStockDayReportList();
   // console.log(res[0].StockCode)
