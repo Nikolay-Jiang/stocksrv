@@ -15,7 +15,6 @@ export async function AddStockDayLog(Lstock: Stock[]) {
 
     let dTemp = new Date()
     console.log("开始写入..." + dTemp.toString())
-
     for (let index = 0; index < Lstock.length; index++) {
 
         const element = Lstock[index];
@@ -23,15 +22,19 @@ export async function AddStockDayLog(Lstock: Stock[]) {
             continue;
         }
 
-        if (element.SearchTime.getDate()<dTemp.getDate()) {//停牌或已退市
+        if (element.SearchTime.getMonth()<dTemp.getMonth()) {//停牌或已退市
             continue;
         }
 
-        element.SearchTime.setHours(element.SearchTime.getHours() + 8);//修正只存UTC 问题
+        if (element.SearchTime.getDate()!= dTemp.getDate()) {//停牌或已退市
+            continue;
+        }
 
         if (element.SearchTime.getHours() < dTemp.getHours()) {//判断停牌情况，9点会被记录一次，后续跳过
             continue;
         }
+        
+        element.SearchTime.setHours(element.SearchTime.getHours() + 8);//修正只存UTC 问题
 
         try {
             let daylog = await prisma.t_StockDayLog.create({//写入数据
