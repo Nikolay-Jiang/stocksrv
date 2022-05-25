@@ -53,14 +53,14 @@ async function DoDayRpt(dReportDay: Date) {
     let tradingvol = 0;
     let tradingprice = 0;
     let tradingpriceAvg = 0;
-    if (mDayLogTemp?.CurrentPrice != undefined && mDayLogTemp.CurrentPrice.toNumber() > 0) {
-      if (mDayLogTemp.TodayMaxPrice != undefined && mDayLogTemp.TodayMinPrice != undefined && mDayLogTemp.TodayMinPrice.toNumber() > 0) {//过滤掉 停牌情况
-        fRatePricetemp = parseFloat((mDayLogTemp.TodayMaxPrice?.toNumber() - mDayLogTemp.TodayMinPrice.toNumber()).toFixed(2))
-        fRatetemp = parseFloat((fRatePricetemp / mDayLogTemp.TodayMinPrice.toNumber()).toFixed(2))
+    if (mDayLogTemp?.CurrentPrice != undefined && Number(mDayLogTemp.CurrentPrice) > 0) {
+      if (mDayLogTemp.TodayMaxPrice != undefined && mDayLogTemp.TodayMinPrice != undefined && Number(mDayLogTemp.TodayMinPrice) > 0) {//过滤掉 停牌情况
+        fRatePricetemp = parseFloat((Number(mDayLogTemp.TodayMaxPrice) - Number(mDayLogTemp.TodayMinPrice)).toFixed(2))
+        fRatetemp = parseFloat((fRatePricetemp / Number(mDayLogTemp.TodayMinPrice)).toFixed(2))
       }
 
     }
-    if (mDayLogTemp.TodayMaxPrice != undefined && mDayLogTemp.TodayMaxPrice.toNumber() == 0) {
+    if (mDayLogTemp.TodayMaxPrice != undefined && Number(mDayLogTemp.TodayMaxPrice) == 0) {
 
       memo = "停牌";
     }
