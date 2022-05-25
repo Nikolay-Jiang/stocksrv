@@ -8,6 +8,7 @@ async function main() {
   ReportDay.setHours(8)
   ReportDay.setMinutes(0)
   ReportDay.setSeconds(0)
+  ReportDay.setMilliseconds(0)
   DoDayRpt(ReportDay);
 
 
@@ -84,8 +85,14 @@ async function DoDayRpt(dReportDay: Date) {
       Memo: memo,
       TradingVol: new Prisma.Decimal(tradingvol),
       TradingPrice: new Prisma.Decimal(tradingprice),
-      TradingPriceAvg: new Prisma.Decimal(tradingpriceAvg.toFixed(2))
-
+      TradingPriceAvg: new Prisma.Decimal(tradingpriceAvg.toFixed(2)),
+      MA: new Prisma.Decimal(-1),
+      bollUP: new Prisma.Decimal(-1),
+      bollDown: new Prisma.Decimal(-1),
+      WIDTH: new Prisma.Decimal(-1),
+      BB: new Prisma.Decimal(-1),
+      RSI7: new Prisma.Decimal(-1),
+      RSI14: new Prisma.Decimal(-1)
     }
 
     await AddStockDayReport(mDayRpt);

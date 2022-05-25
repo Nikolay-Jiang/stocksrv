@@ -2,7 +2,6 @@ import { Prisma, PrismaClient, t_StockDayLog, t_StockNameList, t_StockDayReport 
 import { AnyRecord } from 'dns';
 import { GetStockCurrent2, Stock, GetStockCurrent } from './sinaStockInterface'
 const prisma = new PrismaClient();
-// export const testStr='lalalal'
 
 export function GetTradeList(): any {
     var res = prisma.t_TradeLog.findMany({ select: { KeyID: true } })
@@ -22,18 +21,18 @@ export async function AddStockDayLog(Lstock: Stock[]) {
             continue;
         }
 
-        if (element.SearchTime.getMonth()<dTemp.getMonth()) {//停牌或已退市
+        if (element.SearchTime.getMonth() < dTemp.getMonth()) {//停牌或已退市
             continue;
         }
 
-        if (element.SearchTime.getDate()!= dTemp.getDate()) {//停牌或已退市
+        if (element.SearchTime.getDate() != dTemp.getDate()) {//停牌或已退市
             continue;
         }
 
         if (element.SearchTime.getHours() < dTemp.getHours()) {//判断停牌情况，9点会被记录一次，后续跳过
             continue;
         }
-        
+
         element.SearchTime.setHours(element.SearchTime.getHours() + 8);//修正只存UTC 问题
 
         try {
@@ -60,7 +59,7 @@ export async function AddStockDayLog(Lstock: Stock[]) {
     }
 }
 
-export function GetStockDayLogForRpt(dBegin: Date, dEnd: Date): Promise<t_StockDayLog[]> {
+export async function GetStockDayLogForRpt(dBegin: Date, dEnd: Date): Promise<t_StockDayLog[]> {
 
     dBegin = new Date(dBegin.getFullYear() + "-" + (dBegin.getMonth() + 1) + "-" + dBegin.getDate() + " " + "14:59:59");
     dEnd = new Date(dEnd.getFullYear() + "-" + (dEnd.getMonth() + 1) + "-" + dEnd.getDate() + " " + "00:00:00")
@@ -68,23 +67,26 @@ export function GetStockDayLogForRpt(dBegin: Date, dEnd: Date): Promise<t_StockD
     //处理存取时只认utc 问题
     dBegin.setHours(dBegin.getHours() + 8);
     dEnd.setHours(dEnd.getHours() + 8);
-    return prisma.t_StockDayLog.findMany({
-        where: {
-            SearchTime: {
-                gte: dBegin,
-                lt: dEnd
-            }
-        }
+    const sqlstr = `SELECT * FROM t_StockDayLog WHERE searchtime > = '${dBegin.getFullYear() + "-" + (dBegin.getMonth() + 1) + "-" + dBegin.getDate() + " " + "14:59:59"}' and searchtime < '${dEnd.getFullYear() + "-" + (dEnd.getMonth() + 1) + "-" + dEnd.getDate() + " " + "00:00:00"}';`;
+    console.log(sqlstr);
+    const result = await prisma.$queryRawUnsafe<t_StockDayLog[]>(sqlstr)
+    return result;
+    // return await prisma.t_StockDayLog.findMany({
+    //     where: {
+    //         SearchTime: {
+    //             gte: dBegin,
+    //             lt: dEnd
+    //         }
+    //     }
 
-    })
-
+    // })
 }
 
 
 //#endregion
 
 //#region StockNameList
-export function GetStockNameList(): any {
+export function GetStockNameList(): Promise<t_StockNameList[]> {
     return prisma.t_StockNameList.findMany()
 }
 
@@ -175,9 +177,9 @@ function GetSZCode(i: number): string {
 
 //#region StockDayReport
 export async function AddStockDayReport(mStockDayReport: t_StockDayReport) {
-    
+
     try {
-        const res= await prisma.t_StockDayReport.create({
+        const res = await prisma.t_StockDayReport.create({
             data: {
                 StockCode: mStockDayReport.StockCode,
                 ReportDay: mStockDayReport.ReportDay,
@@ -189,19 +191,67 @@ export async function AddStockDayReport(mStockDayReport: t_StockDayReport) {
                 RatePrice: mStockDayReport.RatePrice,
                 Memo: mStockDayReport.Memo,
                 TradingVol: mStockDayReport.TradingVol,
-                TradingPrice:mStockDayReport.TradingPrice,
-                TradingPriceAvg:mStockDayReport.TradingPriceAvg
+                TradingPrice: mStockDayReport.TradingPrice,
+                TradingPriceAvg: mStockDayReport.TradingPriceAvg
             },
         })
         // console.log(mStockDayReport.StockCode+"|"+mStockDayReport.ReportDay)
     } catch (error) {
-        console.log(mStockDayReport.StockCode+"|"+mStockDayReport.Rate);    
-        console.log("error:"+error);
+        console.log(mStockDayReport.StockCode + "|" + mStockDayReport.Rate);
+        console.log("error:" + error);
     }
-    
+
 }
 
-export function GetStockDayReportList():any  {
+
+export async function BulkStockDayReport(LStockDayReport: t_StockDayReport[]) {
+
+    try {
+        const res = await prisma.t_StockDayReport.createMany({ data: LStockDayReport }
+        )
+    } catch (error) {
+        console.log("error:" + error);
+    }
+
+}
+
+export async function BulkUpdateStockDayReport(LStockDayReport: t_StockDayReport[]) {
+
+    try {
+        const res = await prisma.t_StockDayReport.updateMany({ data: LStockDayReport }
+        )
+    } catch (error) {
+        console.log("error:" + error);
+    }
+}
+
+export async function UpdateDayRpt(stockdayrpt: t_StockDayReport) {
+
+    try {
+        const res = await prisma.t_StockDayReport.update({
+            where: {
+                StockCode_ReportDay:{
+                    StockCode:stockdayrpt.StockCode,
+                    ReportDay:stockdayrpt.ReportDay,
+                }
+
+            },
+            data: stockdayrpt
+        })
+    } catch (error) {
+        console.log("error:",stockdayrpt.StockCode,stockdayrpt.BB,stockdayrpt.WIDTH,error);
+    }
+}
+
+export async function GetStockdayRptByCondition(endday: Date, stockcode: string, count: number): Promise<t_StockDayReport[]> {
+    const sqlstr = `SELECT top ${count} * FROM t_StockDayReport WHERE ReportDay <= '${endday.getFullYear() + "-" + (endday.getMonth() + 1) + "-" + endday.getDate() + " " + "00:00:00"}' and stockcode='${stockcode}' order by ReportDay desc;`;
+    console.log(sqlstr);
+    const result = await prisma.$queryRawUnsafe<t_StockDayReport[]>(sqlstr)
+    return result;
+}
+
+
+export function GetStockDayReportList(): any {
     return prisma.t_StockDayReport.findMany()
 }
 
