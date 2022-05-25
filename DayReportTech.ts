@@ -16,8 +16,9 @@ async function main() {
     endday.setMinutes(0)
     endday.setSeconds(0)
     endday.setMilliseconds(0)
-    endday.setDate(1);
+    endday.setDate(endday.getDate()+1);
 
+    
     var LstockName = await GetAllStockCode()
     if (LstockName.length == 0) {
         return;
@@ -85,9 +86,7 @@ async function main() {
         beginday.setDate(beginday.getDate() + 1);
     }
 
-
-
-
+    console.log(new Date().toString() + "DoTech 被调用,并完成");
 }
 
 async function bollCalc(dayrpts: t_StockDayReport[]): Promise<bolldata> {
