@@ -245,7 +245,7 @@ export async function UpdateDayRpt(stockdayrpt: t_StockDayReport) {
 
 export async function GetStockdayRptByCondition(endday: Date, stockcode: string, count: number): Promise<t_StockDayReport[]> {
     const sqlstr = `SELECT top ${count} * FROM t_StockDayReport WHERE ReportDay <= '${endday.getFullYear() + "-" + (endday.getMonth() + 1) + "-" + endday.getDate() + " " + "00:00:00"}' and stockcode='${stockcode}' order by ReportDay desc;`;
-    console.log(sqlstr);
+    // console.log(sqlstr);
     const result = await prisma.$queryRawUnsafe<t_StockDayReport[]>(sqlstr)
     return result;
 }
