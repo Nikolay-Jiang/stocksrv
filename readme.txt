@@ -5,3 +5,5 @@
     npm install @prisma/client@dev prisma@dev
     tsc --init //初始化项目文件夹
     #npm install mssql
+
+    npx prisma db pull #从MSSQL 中拉取数据模型到本地 schema.prisma

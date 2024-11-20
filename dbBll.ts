@@ -1,6 +1,8 @@
 import { Prisma, PrismaClient, t_StockDayLog, t_StockNameList, t_StockDayReport } from '@prisma/client'
 import { AnyRecord } from 'dns';
 import { GetStockCurrent2, Stock, GetStockCurrent } from './sinaStockInterface'
+import { format, addHours } from 'date-fns';
+
 const prisma = new PrismaClient();
 
 export function GetTradeList(): any {
@@ -61,27 +63,35 @@ export async function AddStockDayLog(Lstock: Stock[]) {
 
 export async function GetStockDayLogForRpt(dBegin: Date, dEnd: Date): Promise<t_StockDayLog[]> {
 
-    dBegin = new Date(dBegin.getFullYear() + "-" + (dBegin.getMonth() + 1) + "-" + dBegin.getDate() + " " + "14:59:59");
-    dEnd = new Date(dEnd.getFullYear() + "-" + (dEnd.getMonth() + 1) + "-" + dEnd.getDate() + " " + "00:00:00")
+    // dBegin = new Date(dBegin.getFullYear() + "-" + (dBegin.getMonth() + 1) + "-" + dBegin.getDate() + " " + "14:59:59");
+    // dEnd = new Date(dEnd.getFullYear() + "-" + (dEnd.getMonth() + 1) + "-" + dEnd.getDate() + " " + "00:00:00")
 
-    //处理存取时只认utc 问题
-    dBegin.setHours(dBegin.getHours() + 8);
-    dEnd.setHours(dEnd.getHours() + 8);
-    const sqlstr = `SELECT * FROM t_StockDayLog WHERE searchtime > = '${dBegin.getFullYear() + "-" + (dBegin.getMonth() + 1) + "-" + dBegin.getDate() + " " + "14:59:59"}' and searchtime < '${dEnd.getFullYear() + "-" + (dEnd.getMonth() + 1) + "-" + dEnd.getDate() + " " + "00:00:00"}';`;
-    console.log(sqlstr);
-    const result = await prisma.$queryRawUnsafe<t_StockDayLog[]>(sqlstr)
-    return result;
-    // return await prisma.t_StockDayLog.findMany({
-    //     where: {
-    //         SearchTime: {
-    //             gte: dBegin,
-    //             lt: dEnd
-    //         }
-    //     }
+    // //处理存取时只认utc 问题
+    // dBegin.setHours(dBegin.getHours() + 8);
+    // dEnd.setHours(dEnd.getHours() + 8);
+    // const sqlstr = `SELECT * FROM t_StockDayLog WHERE searchtime > = '${dBegin.getFullYear() + "-" + (dBegin.getMonth() + 1) + "-" + dBegin.getDate() + " " + "14:59:59"}' and searchtime < '${dEnd.getFullYear() + "-" + (dEnd.getMonth() + 1) + "-" + dEnd.getDate() + " " + "00:00:00"}';`;
+    // console.log(sqlstr);
+    // const result = await prisma.$queryRawUnsafe<t_StockDayLog[]>(sqlstr)
+    // return result;
 
-    // })
+        // 格式化时间范围并处理 UTC 偏移问题
+        const startTime = addHours(new Date(`${format(dBegin, 'yyyy-MM-dd')} 14:59:59`), 8);
+        const endTime = addHours(new Date(`${format(dEnd, 'yyyy-MM-dd')} 00:00:00`), 8);
+    
+        // 使用参数化查询，防止 SQL 注入
+        const sql = `
+            SELECT * 
+            FROM t_StockDayLog 
+            WHERE searchtime >= $1 AND searchtime < $2;
+        `;
+        console.log(`Query: ${sql}, Parameters: [${startTime}, ${endTime}]`);
+    
+        // 使用参数化查询
+        const result = await prisma.$queryRaw<t_StockDayLog[]>(sql, startTime, endTime);
+        return result;
+
+
 }
-
 
 //#endregion
 

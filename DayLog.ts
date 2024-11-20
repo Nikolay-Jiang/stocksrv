@@ -1,6 +1,6 @@
 //独立模块 每日拉取数据模块 
 
-import { prisma, PrismaClient } from '@prisma/client'
+// import { prisma, PrismaClient } from '@prisma/client'
 import { GetSinaStockByList } from './sinaStockInterface'
 import { GetAllStockCode, AddStockDayLog } from './dbBll'
 

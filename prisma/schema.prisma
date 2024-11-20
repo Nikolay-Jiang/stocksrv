@@ -4,7 +4,7 @@ generator client {
 
 datasource db {
   provider = "sqlserver"
-  url      = "sqlserver://127.0.0.1:1433;initial catalog=TechReadyDB;user=sa;password=password.com;trustServerCertificate=true;"
+  url      = "sqlserver://;initial catalog=TechReadyDB;user=sa;password=;trustServerCertificate=true;"
 }
 
 model t_Code {
@@ -52,13 +52,15 @@ model t_Log {
 }
 
 model t_Observer {
-  StockCode String    @id(map: "PK_t_Observer_1") @db.NVarChar(50)
-  Rate      String?   @db.NVarChar(50)
-  RatePrice String?   @db.NVarChar(50)
-  AddDate   DateTime  @db.DateTime
-  LastDate  DateTime? @db.DateTime
-  UserID    String?   @db.NVarChar(50)
-  PlanID    String?   @db.NVarChar(50)
+  StockCode String   @db.NVarChar(50)
+  UserID    String   @db.NVarChar(50)
+  Rate      Decimal? @db.Decimal(3, 2)
+  RatePrice Decimal? @db.Decimal(5, 2)
+  TradeVol  Decimal? @db.Decimal(18, 2)
+  PlanID    String?  @db.NVarChar(50)
+  CreateAt  DateTime @db.DateTimeOffset
+
+  @@id([StockCode, UserID], map: "PK_t_Observer_1")
 }
 
 model t_ObserverRule {
@@ -119,8 +121,19 @@ model t_StockDayReport {
   TodayClosePrice Decimal? @db.Decimal(6, 2)
   TodayMaxPrice   Decimal? @db.Decimal(6, 2)
   TodayMinPrice   Decimal? @db.Decimal(6, 2)
-  Rate            String?  @db.NVarChar(50)
-  RatePrice       String?  @db.NVarChar(50)
+  Rate            Decimal? @db.Decimal(4, 4)
+  RatePrice       Decimal? @db.Decimal(6, 2)
+  TradingVol      Decimal? @db.Decimal(18, 2)
+  TradingPrice    Decimal? @db.Decimal(18, 2)
+  TradingPriceAvg Decimal? @db.Decimal(6, 2)
+  Memo            String?  @db.NVarChar(200)
+  MA              Decimal? @db.Decimal(6, 2)
+  bollUP          Decimal? @db.Decimal(6, 2)
+  bollDown        Decimal? @db.Decimal(6, 2)
+  WIDTH           Decimal? @db.Decimal(6, 2)
+  BB              Decimal? @db.Decimal(5, 4)
+  RSI7            Decimal? @db.Decimal(6, 2)
+  RSI14           Decimal? @db.Decimal(6, 2)
 
   @@id([StockCode, ReportDay], map: "PK_T_STOCKDAYREPORT")
 }
@@ -144,7 +157,23 @@ model t_TradeLog {
 }
 
 model t_User {
-  UserID   String  @id(map: "PK_T_USER") @db.NVarChar(50)
-  UserName String? @db.NVarChar(50)
-  Password String? @db.NVarChar(50)
+  UserID    String    @id(map: "PK_T_USER") @db.NVarChar(50)
+  UserName  String?   @db.NVarChar(50)
+  Password  String    @default("6666666", map: "DF_t_User_Password") @db.NVarChar(100)
+  RoleID    Int       @default(1, map: "DF_t_User_RoleID")
+  CreateAt  DateTime? @db.DateTimeOffset
+  UpdateAt  DateTime? @db.DateTimeOffset
+  IsEnabled Boolean   @default(true, map: "DF_t_User_IsEnabled")
+}
+
+model t_Predict {
+  PredictKey   String    @id(map: "PK_t_Predict") @db.NVarChar(50)
+  StockCode    String?   @db.NVarChar(50)
+  PredictTime  DateTime? @db.DateTimeOffset
+  Type         String?   @db.NVarChar(50)
+  CurrentPrice Decimal?  @db.Decimal(6, 2)
+  RSI7         Decimal?  @db.Decimal(6, 2)
+  RSI14        Decimal?  @db.Decimal(6, 2)
+  BackTest     String?   @db.NVarChar(50)
+  Memo         String?   @db.NVarChar(500)
 }

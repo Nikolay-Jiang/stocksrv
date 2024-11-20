@@ -1,4 +1,4 @@
-import { prisma, t_StockDayReport, Prisma } from '@prisma/client'
+import { t_StockDayReport, Prisma } from '@prisma/client'
 import { GetAllStockCode, GetStockDayLogForRpt, AddStockDayReport } from './dbBll'
 
 

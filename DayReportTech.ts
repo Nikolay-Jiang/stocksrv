@@ -1,4 +1,4 @@
-import { prisma, PrismaClient, t_StockNameList, t_StockDayReport, Prisma } from '@prisma/client'
+import { PrismaClient, t_StockNameList, t_StockDayReport, Prisma } from '@prisma/client'
 import { GetStockCurrent2, Stock, GetStockCurrent, GetSinaStockByList } from './sinaStockInterface'
 import { GetStockdayRptByCondition, UpdateDayRpt, GetAllStockCode } from './dbBll'
 
@@ -27,7 +27,7 @@ async function main() {
     while (endday > beginday) {
         var ReportDay = beginday;
         // ReportDay.setHours(8);
-        console.log(ReportDay.toLocaleDateString());
+        // console.log(ReportDay.toLocaleDateString());
 
         let LdayReport: Array<t_StockDayReport> = [];
 

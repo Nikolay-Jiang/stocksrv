@@ -1,7 +1,7 @@
 import { resolveTxt } from 'dns';
 import { resolve } from 'path';
 import superagent, { parse } from 'superagent';
-import { Prisma, prisma, PrismaClient, t_StockNameList } from '@prisma/client'
+import { Prisma, PrismaClient, t_StockNameList } from '@prisma/client'
 
 const dataurl = "http://hq.sinajs.cn/list=";
 let TempWebData = '';
@@ -11,7 +11,6 @@ export function GetStockCurrent(stockcode: string): Promise<Stock> {
 
     if (stockcode.length > 8) {
         throw new Error("股票代码异常！");
-
     }
 
 
