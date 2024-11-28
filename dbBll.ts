@@ -1,13 +1,13 @@
 import { Prisma, PrismaClient, t_StockDayLog, t_StockNameList, t_StockDayReport } from '@prisma/client'
-import { AnyRecord } from 'dns';
-import { GetStockCurrent2, Stock, GetStockCurrent } from './sinaStockInterface'
-import { format, addHours } from 'date-fns';
+// import { GetStockCurrent2, Stock, GetStockCurrent } from './sinaStockInterface'
+import { Stock, GetStockCurrent } from './tencentStockInterface'
+
+
 
 const prisma = new PrismaClient();
 
 export function GetTradeList(): any {
     var res = prisma.t_TradeLog.findMany({ select: { KeyID: true } })
-    // var res ='tesinfo'
     return res;
 }
 
@@ -15,6 +15,7 @@ export function GetTradeList(): any {
 export async function AddStockDayLog(Lstock: Stock[]) {
 
     let dTemp = new Date()
+    let Lstockdaylog: Array<t_StockDayLog> = [];
     console.log("开始写入..." + dTemp.toString())
     for (let index = 0; index < Lstock.length; index++) {
 
@@ -37,58 +38,73 @@ export async function AddStockDayLog(Lstock: Stock[]) {
 
         element.SearchTime.setHours(element.SearchTime.getHours() + 8);//修正只存UTC 问题
 
+
+
         try {
-            let daylog = await prisma.t_StockDayLog.create({//写入数据
-                data: {
-                    StockCode: element.stockcode,
-                    SearchTime: element.SearchTime,
-                    CurrentPrice: element.CurrentPrice,
-                    YesterdayClosingPrice: element.YesterdayClosingPrice,
-                    TodayOpeningPrice: element.TodayOpeningPrice,
-                    TodayMinPrice: element.TodayMinPrice,
-                    TodayMaxPrice: element.TodayMaxPrice,
-                    TradingVolume: element.TradingVolume,
-                    TradingPrice: element.TradingPrice,
-                    BidBuyPrice: element.BidBuyPrice,
-                    BidSellPrice: element.BidSellPrice,
-                    SellBuyRate: element.SellBuyRate,
-                },
-            })
+            var mDayLog: t_StockDayLog = {
+                StockCode: element.stockcode,
+                SearchTime: element.SearchTime,
+                CurrentPrice: new Prisma.Decimal(element.CurrentPrice.length > 7 ? "9999" : element.CurrentPrice),
+                YesterdayClosingPrice: new Prisma.Decimal(element.YesterdayClosingPrice.length > 7 ? "9999" : element.YesterdayClosingPrice),
+                TodayOpeningPrice: new Prisma.Decimal(element.TodayOpeningPrice.length > 7 ? "9999" : element.TodayOpeningPrice),
+                TodayMinPrice: new Prisma.Decimal(element.TodayMinPrice.length > 7 ? "9999" : element.TodayMinPrice),
+                TodayMaxPrice: new Prisma.Decimal(element.TodayMaxPrice.length > 7 ? "9999" : element.TodayMaxPrice),
+                TradingVolume: element.TradingVolume,
+                TradingPrice: element.TradingPrice,
+                BidBuyPrice: new Prisma.Decimal(element.BidBuyPrice),
+                BidSellPrice: new Prisma.Decimal(element.BidSellPrice),
+                SellBuyRate: element.SellBuyRate,
+                HighLowRate: null,
+                HighLowPrice: null
+            }
+            Lstockdaylog[index] = mDayLog;
         } catch (error) {
             console.log("error:" + Lstock[index].stockcode + error)
         }
 
     }
+
+    Lstockdaylog = Lstockdaylog.filter(res => { return res != undefined })
+
+    if (Lstockdaylog.length == 0) {
+        return;
+    }
+
+    console.log(Lstockdaylog.length);
+    await BulkStockDayLog(Lstockdaylog);
+
 }
 
 export async function GetStockDayLogForRpt(dBegin: Date, dEnd: Date): Promise<t_StockDayLog[]> {
 
-    // dBegin = new Date(dBegin.getFullYear() + "-" + (dBegin.getMonth() + 1) + "-" + dBegin.getDate() + " " + "14:59:59");
-    // dEnd = new Date(dEnd.getFullYear() + "-" + (dEnd.getMonth() + 1) + "-" + dEnd.getDate() + " " + "00:00:00")
+    dBegin = new Date(dBegin.getFullYear() + "-" + (dBegin.getMonth() + 1) + "-" + dBegin.getDate() + " " + "14:59:59");
+    dEnd = new Date(dEnd.getFullYear() + "-" + (dEnd.getMonth() + 1) + "-" + dEnd.getDate() + " " + "00:00:00")
 
-    // //处理存取时只认utc 问题
-    // dBegin.setHours(dBegin.getHours() + 8);
-    // dEnd.setHours(dEnd.getHours() + 8);
-    // const sqlstr = `SELECT * FROM t_StockDayLog WHERE searchtime > = '${dBegin.getFullYear() + "-" + (dBegin.getMonth() + 1) + "-" + dBegin.getDate() + " " + "14:59:59"}' and searchtime < '${dEnd.getFullYear() + "-" + (dEnd.getMonth() + 1) + "-" + dEnd.getDate() + " " + "00:00:00"}';`;
-    // console.log(sqlstr);
-    // const result = await prisma.$queryRawUnsafe<t_StockDayLog[]>(sqlstr)
+    //处理存取时只认utc 问题
+    dBegin.setHours(dBegin.getHours() + 8);
+    dEnd.setHours(dEnd.getHours() + 8);
+    const sqlstr = `SELECT * FROM t_StockDayLog WHERE searchtime > = '${dBegin.getFullYear() + "-" + (dBegin.getMonth() + 1) + "-" + dBegin.getDate() + " " + "14:59:59"}' and searchtime < '${dEnd.getFullYear() + "-" + (dEnd.getMonth() + 1) + "-" + dEnd.getDate() + " " + "00:00:00"}';`;
+    console.log(sqlstr);
+    const result = await prisma.$queryRawUnsafe<t_StockDayLog[]>(sqlstr)
+    return result;
+
+    // // 格式化时间范围并处理 UTC 偏移问题
+    // const startTime = addHours(new Date(`${format(dBegin, 'yyyy-MM-dd')} 14:59:59`), 8);
+    // const endTime = addHours(new Date(`${format(dEnd, 'yyyy-MM-dd')} 00:00:00`), 8);
+
+
+
+    // // 使用参数化查询，防止 SQL 注入
+    // const sql = `
+    //     SELECT * 
+    //     FROM t_StockDayLog 
+    //     WHERE searchtime >= $1 AND searchtime < $2;
+    // `;
+    // console.log(`Query: ${sql}, Parameters: [${startTime}, ${endTime}]`);
+
+    // // 使用参数化查询
+    // const result = await prisma.$queryRaw<t_StockDayLog[]>(sql, startTime, endTime);
     // return result;
-
-        // 格式化时间范围并处理 UTC 偏移问题
-        const startTime = addHours(new Date(`${format(dBegin, 'yyyy-MM-dd')} 14:59:59`), 8);
-        const endTime = addHours(new Date(`${format(dEnd, 'yyyy-MM-dd')} 00:00:00`), 8);
-    
-        // 使用参数化查询，防止 SQL 注入
-        const sql = `
-            SELECT * 
-            FROM t_StockDayLog 
-            WHERE searchtime >= $1 AND searchtime < $2;
-        `;
-        console.log(`Query: ${sql}, Parameters: [${startTime}, ${endTime}]`);
-    
-        // 使用参数化查询
-        const result = await prisma.$queryRaw<t_StockDayLog[]>(sql, startTime, endTime);
-        return result;
 
 
 }
@@ -213,6 +229,17 @@ export async function AddStockDayReport(mStockDayReport: t_StockDayReport) {
 
 }
 
+export async function BulkStockDayLog(LStockDayLog: t_StockDayLog[]) {
+
+    try {
+        const res = await prisma.t_StockDayLog.createMany({ data: LStockDayLog }
+        )
+    } catch (error) {
+        console.log("error:" + error);
+    }
+
+}
+
 
 export async function BulkStockDayReport(LStockDayReport: t_StockDayReport[]) {
 
@@ -240,16 +267,16 @@ export async function UpdateDayRpt(stockdayrpt: t_StockDayReport) {
     try {
         const res = await prisma.t_StockDayReport.update({
             where: {
-                StockCode_ReportDay:{
-                    StockCode:stockdayrpt.StockCode,
-                    ReportDay:stockdayrpt.ReportDay,
+                StockCode_ReportDay: {
+                    StockCode: stockdayrpt.StockCode,
+                    ReportDay: stockdayrpt.ReportDay,
                 }
 
             },
             data: stockdayrpt
         })
     } catch (error) {
-        console.log("error:",stockdayrpt.StockCode,stockdayrpt.BB,stockdayrpt.WIDTH,error);
+        console.log("error:", stockdayrpt.StockCode, stockdayrpt.BB, stockdayrpt.WIDTH, error);
     }
 }
 

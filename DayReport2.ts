@@ -1,7 +1,7 @@
-import { PrismaClient, t_StockDayReport, Prisma } from '@prisma/client'
-import { GetAllStockCode, GetStockDayLogForRpt, AddStockDayReport, GetStockNameList, BulkStockDayReport } from './dbBll'
+import { t_StockDayReport, Prisma } from '@prisma/client'
+import { GetAllStockCode, GetStockDayLogForRpt, BulkStockDayReport } from './dbBll'
 
-
+//补报表功能，请修改开始和结束时间
 async function main() {
 
     var beginday: Date = new Date("2021-12-12");

@@ -1,5 +1,4 @@
-import { PrismaClient, t_StockNameList, t_StockDayReport, Prisma } from '@prisma/client'
-import { GetStockCurrent2, Stock, GetStockCurrent, GetSinaStockByList } from './sinaStockInterface'
+import { t_StockDayReport, Prisma } from '@prisma/client'
 import { GetStockdayRptByCondition, UpdateDayRpt, GetAllStockCode } from './dbBll'
 
 import { parse } from 'superagent';

@@ -1,14 +1,13 @@
-import { prisma, PrismaClient, t_StockNameList, t_StockDayReport, Prisma } from '@prisma/client'
-import { GetStockCurrent2, Stock, GetStockCurrent, GetSinaStockByList } from './sinaStockInterface'
+import { PrismaClient, t_StockNameList, t_StockDayReport, Prisma } from '@prisma/client'
 import { GetStockdayRptByCondition, UpdateDayRpt, GetAllStockCode } from './dbBll'
-
-import { parse } from 'superagent';
-
 
 // const dataurl = "https://qt.gtimg.cn/q=sz002415";
 
 async function main() {
 
+  console.log("TestInfo");
+  return;
+  
   var beginday: Date = new Date("2022-05-24");
   var endday: Date = new Date("2022-05-25");
 
@@ -75,7 +74,7 @@ async function main() {
       mDayRpt.WIDTH = new Prisma.Decimal(((boll.up - boll.down) / boll.ma).toFixed(2));
       mDayRpt.Memo = memo;
 
-      UpdateDayRpt(mDayRpt)
+      //UpdateDayRpt(mDayRpt)
 
     }
 

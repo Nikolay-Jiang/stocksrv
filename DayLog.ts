@@ -2,7 +2,8 @@
 
 // import { prisma, PrismaClient } from '@prisma/client'
 import { GetSinaStockByList } from './sinaStockInterface'
-import { GetAllStockCode, AddStockDayLog } from './dbBll'
+import { GettencentStockByList } from './tencentStockInterface'
+import { GetAllStockCode, AddStockDayLog} from './dbBll'
 
 async function main() {
 
@@ -20,7 +21,8 @@ async function main() {
     //获取库中所有stockcode
     var Lcodes = await GetAllStockCode()//数据库获取所有股票代码
   
-    var Lstocks = await GetSinaStockByList(Lcodes);//接口获取所有数据
+    // var Lstocks = await GetSinaStockByList(Lcodes);//接口获取所有数据
+    var Lstocks = await GettencentStockByList(Lcodes);//接口获取所有数据
   
     console.log(Lstocks.length)
   
@@ -31,8 +33,6 @@ async function main() {
   function isStopRunning() {
   
     let dTime = new Date();
-    // console.log('timestamp: ' + dTime.getHours());
-    // console.log('timestamp: ' + dTime.getDay());
     if (dTime.getDay() > 5 || dTime.getDay()<1) {//周六周日不需要运行
       return true;
     }

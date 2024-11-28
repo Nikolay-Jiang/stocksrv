@@ -10,13 +10,9 @@ async function main() {
   ReportDay.setSeconds(0)
   ReportDay.setMilliseconds(0)
   DoDayRpt(ReportDay);
-
-
 }
 
 async function DoDayRpt(dReportDay: Date) {
-
-
 
   var dEnd = new Date();
   Object.assign(dEnd, dReportDay)
@@ -61,7 +57,6 @@ async function DoDayRpt(dReportDay: Date) {
 
     }
     if (mDayLogTemp.TodayMaxPrice != undefined && Number(mDayLogTemp.TodayMaxPrice) == 0) {
-
       memo = "停牌";
     }
 
