@@ -64,6 +64,9 @@ async function DoDayRpt(dReportDay: Date) {
       tradingvol = parseFloat(mDayLogTemp.TradingVolume);
       tradingprice = parseFloat(mDayLogTemp.TradingPrice);
       if (parseFloat(mDayLogTemp.TradingVolume) > 0) {
+        if (mDayLogTemp.StockCode.includes("sh688")) {//科创版的交易量精确度个位数,需要修正
+          tradingprice=tradingprice*100;
+        }
         tradingpriceAvg = tradingprice / tradingvol
       }
     }
