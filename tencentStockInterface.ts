@@ -1,4 +1,5 @@
 import { resolveTxt } from 'dns';
+import logger from './logger';
 import { resolve } from 'path';
 import superagent, { parse } from 'superagent';
 import { Prisma, PrismaClient, t_StockNameList } from '@prisma/client'
@@ -17,8 +18,8 @@ export function GetStockCurrent(stockcode: string): Promise<Stock> {
 
     return GetWebData(stockcode).then((result: string) => {
 
-        // console.log(result);
-        var mStock = Parse(result);
+        // logger.info(result);
+        const mStock = Parse(result);
         return mStock;
     });
 
@@ -34,13 +35,13 @@ export function GetStockCurrent2(stockcodes: string): Promise<Stock[]> {
 
     return GetWebData(stockcodes).then((result: string) => {
 
-        var ArrayInfo: string[] = result.split(';');
+        const ArrayInfo: string[] = result.split(';');
 
-        var Lstock: Array<Stock> = [];
-        var iIndex = 0;
-        // console.log(result);
+        let Lstock: Array<Stock> = [];
+        let iIndex = 0;
+        // logger.info(result);
         ArrayInfo.forEach(element => {
-            var mStock = Parse(element);
+            const mStock = Parse(element);
             if (mStock.stockcode == undefined) {
                 return;
             }
@@ -55,7 +56,7 @@ export function GetStockCurrent2(stockcodes: string): Promise<Stock[]> {
 
 export async function GettencentStockByList(lstockcode: t_StockNameList[]): Promise<Stock[]> {
 
-    var Lstock: Array<Stock> = [];
+    let Lstock: Array<Stock> = [];
 
     if (lstockcode.length < 1) {
         return Lstock
@@ -70,10 +71,10 @@ export async function GettencentStockByList(lstockcode: t_StockNameList[]): Prom
         const element = lstockcode[index];
         iCount++;
         if (iCount == 20) { //一次读取20条
-            var res = await GetStockCurrent2(strCodes)
+            const res = await GetStockCurrent2(strCodes)
             Lstock = Lstock.concat(res);
 
-            //console.log("count" + Lstock.length)
+            //logger.info("count" + Lstock.length)
 
             strCodes = "";
             iCount = 0;
@@ -82,10 +83,10 @@ export async function GettencentStockByList(lstockcode: t_StockNameList[]): Prom
     }
 
     if (strCodes != "") {//处理不足20条的情况
-        var res = await GetStockCurrent2(strCodes)
+        const res = await GetStockCurrent2(strCodes)
         Lstock = Lstock.concat(res);
 
-        // console.log("count" + Lstock.length)
+        // logger.info("count" + Lstock.length)
 
         strCodes = "";
         iCount = 0;
@@ -99,9 +100,9 @@ export async function GettencentStockByList(lstockcode: t_StockNameList[]): Prom
 function Parse(orginText: string): Stock {
 
     // v_sz002415="51~海康威视~002415~30.02~29.59~29.51~280959~167335~113623~30.01~730~30.00~3043~29.99~243~29.98~504~29.97~147~30.02~518~30.03~273~30.04~69~30.05~254~30.06~72~~20241127161500~0.43~1.45~30.02~29.45~30.02/280959/837838461~280959~83784~0.31~20.74~~30.02~29.45~1.93~2733.62~2771.81~3.61~32.55~26.63~0.99~3481~29.82~25.64~19.65~~~1.05~83783.8461~0.0000~0~ ~GP-A~-11.24~-3.47~3.03~17.39~11.74~35.90~24.71~-7.40~0.03~13.80~9105998839~9233198326~59.47~-13.69~9105998839~~~-12.68~0.07~~CNY~0~~30.09~-312"; 
-    var mStock = new Stock();
+    const mStock = new Stock();
     try {
-        // console.log(orginText)
+        // logger.info(orginText)
         let iStart = orginText.indexOf('"') + 1;
         let iEnd = orginText.indexOf('"', iStart);
 
@@ -109,8 +110,8 @@ function Parse(orginText: string): Stock {
             return new Stock();
         }
 
-        var sInput = orginText.substring(iStart, iEnd);
-        var sTemp: string[] = sInput.split('~');
+        const sInput = orginText.substring(iStart, iEnd);
+        const sTemp: string[] = sInput.split('~');
 
         if (sTemp.length < 32) {//数据不足或异常
             return new Stock();
@@ -134,9 +135,9 @@ function Parse(orginText: string): Stock {
         mStock.SellTop5 = [];
 
         //计算buysellrate
-        var iIndex = 10;
-        var iBuyTotal = 0;
-        var iSelltotal = 0;
+        let iIndex = 10;
+        let iBuyTotal = 0;
+        let iSelltotal = 0;
         for (let index = 0; index < 5; index++) {
             mStock.BuyTop5[index] = sTemp[iIndex + 1] + "/" + sTemp[iIndex];//买入价格/买入量
             iBuyTotal += parseInt(sTemp[iIndex]);
@@ -149,7 +150,7 @@ function Parse(orginText: string): Stock {
             iIndex += 2
         }
 
-        // console.log("lala:"+iBuyTotal+"&"+iSelltotal);
+        // logger.info("lala:"+iBuyTotal+"&"+iSelltotal);
 
         mStock.SellBuyRate = ((iBuyTotal - iSelltotal) / (iBuyTotal + iSelltotal) * 100).toFixed(2).toString() + "%";
         mStock.SearchTime = convertToDate(sTemp[30]);
@@ -158,7 +159,7 @@ function Parse(orginText: string): Stock {
 
 
     } catch (error) {
-        console.log(error);
+        logger.info(error);
     }
 
 
@@ -186,9 +187,9 @@ const convertToDate = (input: string): Date => {
 
 function ParseStockCode(orginText: string): string {
 
-    var ArrayInfo: string[] = orginText.split('=');
-    var iStart = ArrayInfo[0].indexOf("v_");
-    var sResult: string = ArrayInfo[0].substring(iStart + 2);
+    const ArrayInfo: string[] = orginText.split('=');
+    const iStart = ArrayInfo[0].indexOf("v_");
+    const sResult: string = ArrayInfo[0].substring(iStart + 2);
     return sResult.trim();
 }
 
@@ -215,9 +216,9 @@ async function GetWebData(stockcode: string): Promise<string> {
 
         ;
 
-    var res = courseHtml.text;
+    const res = courseHtml.text;
 
-    //console.log(courseHtml.charset);
+    //logger.info(courseHtml.charset);
     return res;
 
 }

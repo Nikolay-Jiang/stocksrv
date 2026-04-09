@@ -1,16 +1,16 @@
 import { t_StockDayReport, Prisma } from '@prisma/client'
-import { GetStockdayRptByCondition, UpdateDayRpt, GetAllStockCode } from './dbBll'
+import logger from './logger';
+import { GetStockdayRptByCondition, UpdateDayRpt, GetAllStockCode, prisma } from './dbBll'
 
-import { parse } from 'superagent';
 
 async function main() {
 
-    var beginday: Date = new Date();
+    let beginday: Date = new Date();
     beginday.setHours(8)
     beginday.setMinutes(0)
     beginday.setSeconds(0)
     beginday.setMilliseconds(0)
-    var endday: Date = new Date();
+    let endday: Date = new Date();
     endday.setHours(8)
     endday.setMinutes(0)
     endday.setSeconds(0)
@@ -18,21 +18,21 @@ async function main() {
     endday.setDate(endday.getDate()+1);
 
     
-    var LstockName = await GetAllStockCode()
+    const LstockName = await GetAllStockCode()
     if (LstockName.length == 0) {
         return;
     }
 
     while (endday > beginday) {
-        var ReportDay = beginday;
+        let ReportDay = beginday;
         // ReportDay.setHours(8);
-        // console.log(ReportDay.toLocaleDateString());
+        // logger.info(ReportDay.toLocaleDateString());
 
         let LdayReport: Array<t_StockDayReport> = [];
 
         for (let i = 0; i < LstockName.length; i++) {
             const element = LstockName[i];
-            var dayrptTemp = await GetStockdayRptByCondition(beginday, element.StockCode, 21);
+            const dayrptTemp = await GetStockdayRptByCondition(beginday, element.StockCode, 21);
 
             if (dayrptTemp.length == 0 || dayrptTemp.length < 20) {
                 continue;
@@ -41,29 +41,29 @@ async function main() {
                 continue;
             }
 
-            var mDayRpt = dayrptTemp[0];
+            const mDayRpt = dayrptTemp[0];
             if (Number(mDayRpt.TradingVol) == 0) {//过滤停牌
                 continue;
             }
             dayrptTemp.sort(function (a, b) {
-                var keyA = a.ReportDay,
+                const keyA = a.ReportDay,
                     keyB = b.ReportDay;
                 // Compare the 2 dates
                 if (keyA < keyB) return -1;
                 if (keyA > keyB) return 1;
                 return 0;
             });
-            // console.log(dayrptTemp[0].ReportDay + "|" + dayrptTemp[dayrptTemp.length - 1].ReportDay)
+            // logger.info(dayrptTemp[0].ReportDay + "|" + dayrptTemp[dayrptTemp.length - 1].ReportDay)
 
-            var boll = await bollCalc(dayrptTemp);
-            var rsi = await rsiCalc(dayrptTemp);
-            var memo: string = "布林:";
+            const boll = await bollCalc(dayrptTemp);
+            const rsi = await rsiCalc(dayrptTemp);
+            let memo: string = "布林:";
             if (Number(mDayRpt.TodayClosePrice) > boll.ma) { memo += "强势区" }
             if (Number(mDayRpt.TodayClosePrice) < boll.ma) { memo += "弱势区" }
             if (Number(mDayRpt.TodayMinPrice) < boll.down) { memo += "|穿透下线" }
             if (Number(mDayRpt.TodayMaxPrice) > boll.up) { memo += "|穿透上线" }
 
-            var bb: number = (Number(mDayRpt.TodayClosePrice) - boll.down) / (boll.up - boll.down);
+            let bb: number = (Number(mDayRpt.TodayClosePrice) - boll.down) / (boll.up - boll.down);
             bb = bb;
 
             memo += "||RSI:";
@@ -85,12 +85,12 @@ async function main() {
         beginday.setDate(beginday.getDate() + 1);
     }
 
-    console.log(new Date().toString() + "DoTech 被调用,并完成");
+    logger.info(new Date().toString() + "DoTech 被调用,并完成");
 }
 
 async function bollCalc(dayrpts: t_StockDayReport[]): Promise<bolldata> {
-    var mBollData = new bolldata();
-    var dayrptsCopy = [...dayrpts];
+    const mBollData = new bolldata();
+    let dayrptsCopy = [...dayrpts];
 
     if (dayrpts.length == 0) {
         return mBollData;
@@ -99,9 +99,9 @@ async function bollCalc(dayrpts: t_StockDayReport[]): Promise<bolldata> {
         dayrptsCopy = dayrptsCopy.slice(dayrptsCopy.length - 20, dayrptsCopy.length);
     }
 
-    var sumClose = dayrptsCopy.reduce((c, R) => c + Number(R.TodayClosePrice), 0)
+    const sumClose = dayrptsCopy.reduce((c, R) => c + Number(R.TodayClosePrice), 0)
     mBollData.ma = Number((sumClose / dayrptsCopy.length).toFixed(2));
-    var staTemp: number = 0;
+    let staTemp: number = 0;
     for (let index = 0; index < dayrptsCopy.length; index++) {
         const element = dayrptsCopy[index];
         staTemp += Math.pow(Number(element.TodayClosePrice) - mBollData.ma, 2);
@@ -115,26 +115,26 @@ async function bollCalc(dayrpts: t_StockDayReport[]): Promise<bolldata> {
 }
 
 async function rsiCalc(dayrpts: t_StockDayReport[]): Promise<rsidata> {
-    var mRsiData = new rsidata();
+    const mRsiData = new rsidata();
     mRsiData.rsi7 = -1;
     mRsiData.rsi14 = -1;
     if (dayrpts.length == 0 || dayrpts.length < 7) {
         return mRsiData;
     }
-    var dayrptsCopy = [...dayrpts];
+    let dayrptsCopy = [...dayrpts];
 
     if (dayrptsCopy.length > 15) {
         dayrptsCopy = dayrptsCopy.slice(dayrptsCopy.length - 15, dayrptsCopy.length);
     }
 
-    var upSum = 0;
-    var upSum7 = 0;
-    var downSum = 0;
-    var downSum7 = 0;
-    var iCount7 = 0;
+    let upSum = 0;
+    let upSum7 = 0;
+    let downSum = 0;
+    let downSum7 = 0;
+    let iCount7 = 0;
     for (let index = 1; index < dayrptsCopy.length; index++) {
         const element = dayrptsCopy[index];
-        var iTemp = Number(element.TodayClosePrice) - Number(dayrptsCopy[index - 1].TodayClosePrice);
+        const iTemp = Number(element.TodayClosePrice) - Number(dayrptsCopy[index - 1].TodayClosePrice);
 
         if (iTemp >= 0) {
             upSum += iTemp;
@@ -170,7 +170,7 @@ async function rsiCalc(dayrpts: t_StockDayReport[]): Promise<rsidata> {
 
         }
     }
-    console.log(iCount7 + "|" + dayrptsCopy[0].ReportDay);
+    logger.info(iCount7 + "|" + dayrptsCopy[0].ReportDay);
     //  文字结论
     if (mRsiData.rsi14 == -1) {
         return mRsiData;
@@ -217,4 +217,5 @@ main()
         throw e
     })
     .finally(async () => {
+      await prisma.$disconnect()
     })

@@ -1,16 +1,17 @@
 import { t_StockDayReport, Prisma } from '@prisma/client'
-import { GetAllStockCode, GetStockDayLogForRpt, BulkStockDayReport } from './dbBll'
+import logger from './logger';
+import { GetAllStockCode, GetStockDayLogForRpt, BulkStockDayReport, prisma } from './dbBll'
 
 //补报表功能，请修改开始和结束时间
 async function main() {
 
-    var beginday: Date = new Date("2021-12-12");
-    var endday: Date = new Date("2022-01-01")
+    let beginday: Date = new Date("2021-12-12");
+    let endday: Date = new Date("2022-01-01")
 
     while (endday > beginday) {
-        var ReportDay = beginday;
+        let ReportDay = beginday;
         ReportDay.setHours(8);
-        console.log(ReportDay.toLocaleDateString());
+        logger.info(ReportDay.toLocaleDateString());
 
         await DoDayRpt(ReportDay);
 
@@ -23,23 +24,23 @@ async function DoDayRpt(dReportDay: Date) {
 
 
 
-    var dEnd = new Date(dReportDay.toUTCString());
+    let dEnd = new Date(dReportDay.toUTCString());
     Object.assign(dEnd, dReportDay)
     dEnd.setDate(dEnd.getDate() + 1);
 
     // 1.GetDayLogListForRpt(RptDay,rptday+1)
-    var Lstockdaylog = await GetStockDayLogForRpt(dReportDay, dEnd)
+    const Lstockdaylog = await GetStockDayLogForRpt(dReportDay, dEnd)
 
     // 2.if length==0 no data to report
     if (Lstockdaylog == null || Lstockdaylog == undefined || Lstockdaylog.length == 0) {
-        console.log(new Date().toString() + "DoReport 被调用，但是没有数据可供生成");
+        logger.info(new Date().toString() + "DoReport 被调用，但是没有数据可供生成");
         return
     }
 
-    console.log("len:" + Lstockdaylog.length)
+    logger.info("len:" + Lstockdaylog.length)
 
     // 3.do rpt
-    var LstockName = await GetAllStockCode()
+    const LstockName = await GetAllStockCode()
     if (LstockName.length == 0) {
         return;
     }
@@ -47,7 +48,7 @@ async function DoDayRpt(dReportDay: Date) {
 
     for (let i = 0; i < LstockName.length; i++) {
         const element = LstockName[i];
-        var mDayLogTemp = Lstockdaylog.find(myobj => myobj.StockCode == element.StockCode)
+        const mDayLogTemp = Lstockdaylog.find(myobj => myobj.StockCode == element.StockCode)
 
         if (mDayLogTemp == null || mDayLogTemp == undefined) {//无数据情况
             continue;
@@ -78,7 +79,7 @@ async function DoDayRpt(dReportDay: Date) {
             }
         }
 
-        var mDayRpt: t_StockDayReport = {
+        const mDayRpt: t_StockDayReport = {
             StockCode: mDayLogTemp.StockCode,
             ReportDay: dReportDay,
             TodayOpenPrice: mDayLogTemp.TodayOpeningPrice,
@@ -106,8 +107,8 @@ async function DoDayRpt(dReportDay: Date) {
     }
 
     await BulkStockDayReport(LdayReport);
-    console.log(LdayReport.length);
-    console.log(new Date().toString() + "DoReport 生成成功！");
+    logger.info(LdayReport.length);
+    logger.info(new Date().toString() + "DoReport 生成成功！");
     return;
 }
 main()
@@ -115,4 +116,5 @@ main()
         throw e
     })
     .finally(async () => {
+      await prisma.$disconnect()
     })

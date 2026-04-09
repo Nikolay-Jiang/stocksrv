@@ -1,10 +1,11 @@
 import { t_StockDayReport, Prisma } from '@prisma/client'
-import { GetAllStockCode, GetStockDayLogForRpt, AddStockDayReport } from './dbBll'
+import logger from './logger';
+import { GetAllStockCode, GetStockDayLogForRpt, AddStockDayReport, prisma } from './dbBll'
 
 
 async function main() {
 
-  var ReportDay = new Date();
+  let ReportDay = new Date();
   ReportDay.setHours(8)
   ReportDay.setMinutes(0)
   ReportDay.setSeconds(0)
@@ -14,30 +15,30 @@ async function main() {
 
 async function DoDayRpt(dReportDay: Date) {
 
-  var dEnd = new Date();
+  let dEnd = new Date();
   Object.assign(dEnd, dReportDay)
   dEnd.setDate(dEnd.getDate() + 1);
 
   // 1.GetDayLogListForRpt(RptDay,rptday+1)
-  var Lstockdaylog = await GetStockDayLogForRpt(dReportDay, dEnd)
+  let Lstockdaylog = await GetStockDayLogForRpt(dReportDay, dEnd)
 
   // 2.if length==0 no data to report
   if (Lstockdaylog.length == 0) {
-    console.log(new Date().toString() + "DoReport 被调用，但是没有数据可供生成");
+    logger.info(new Date().toString() + "DoReport 被调用，但是没有数据可供生成");
     return
   }
 
-  console.log("len:" + Lstockdaylog.length)
+  logger.info("len:" + Lstockdaylog.length)
 
   // 3.do rpt
-  var LstockName = await GetAllStockCode()
+  let LstockName = await GetAllStockCode()
   if (LstockName.length == 0) {
     return;
   }
 
-  for (let i = 0; i < LstockName.length; i++) {
-    const element = LstockName[i];
-    var mDayLogTemp = Lstockdaylog.find(myobj => myobj.StockCode == element.StockCode)
+    for (let i = 0; i < LstockName.length; i++) {
+        const element = LstockName[i];
+        let mDayLogTemp = Lstockdaylog.find(myobj => myobj.StockCode == element.StockCode)
 
     if (mDayLogTemp == null || mDayLogTemp == undefined) {//无数据情况
       continue;
@@ -71,7 +72,7 @@ async function DoDayRpt(dReportDay: Date) {
       }
     }
 
-    var mDayRpt: t_StockDayReport = {
+    let mDayRpt: t_StockDayReport = {
       StockCode: mDayLogTemp.StockCode,
       ReportDay: dReportDay,
       TodayOpenPrice: mDayLogTemp.TodayOpeningPrice,
@@ -96,7 +97,7 @@ async function DoDayRpt(dReportDay: Date) {
     await AddStockDayReport(mDayRpt);
   }
 
-  console.log(new Date().toString() + "DoReport 生成成功！");
+  logger.info(new Date().toString() + "DoReport 生成成功！");
 
 }
 main()
@@ -104,4 +105,5 @@ main()
     throw e
   })
   .finally(async () => {
+    await prisma.$disconnect()
   })

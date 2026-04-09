@@ -1,9 +1,9 @@
 //独立模块 每日拉取数据模块 
+import logger from './logger';
 
 // import { prisma, PrismaClient } from '@prisma/client'
-import { GetSinaStockByList } from './sinaStockInterface'
 import { GettencentStockByList } from './tencentStockInterface'
-import { GetAllStockCode, AddStockDayLog} from './dbBll'
+import { GetAllStockCode, AddStockDayLog, prisma } from './dbBll'
 
 async function main() {
 
@@ -14,17 +14,17 @@ async function main() {
 
     //判断当前时段是否需要执行任务
     if (isStopRunning()) {
-      console.log("不在任务时段")
+      logger.info("不在任务时段")
       return;
     }
   
     //获取库中所有stockcode
-    var Lcodes = await GetAllStockCode()//数据库获取所有股票代码
+    const Lcodes = await GetAllStockCode()//数据库获取所有股票代码
   
     // var Lstocks = await GetSinaStockByList(Lcodes);//接口获取所有数据
-    var Lstocks = await GettencentStockByList(Lcodes);//接口获取所有数据
+    let Lstocks = await GettencentStockByList(Lcodes);//接口获取所有数据
   
-    console.log(Lstocks.length)
+    logger.info(Lstocks.length)
   
     //写入数据库
     await AddStockDayLog(Lstocks)
@@ -67,5 +67,5 @@ async function main() {
       throw e
     })
     .finally(async () => {
-      
+      await prisma.$disconnect()
     })

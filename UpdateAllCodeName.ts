@@ -1,4 +1,5 @@
-import { UpdateAllCodeName } from './dbBll'
+import { UpdateAllCodeName, prisma } from './dbBll'
+import logger from './logger';
 
 // const dataurl = "https://qt.gtimg.cn/q=sz002415";
 
@@ -13,4 +14,5 @@ main()
     throw e
   })
   .finally(async () => {
+    await prisma.$disconnect()
   })

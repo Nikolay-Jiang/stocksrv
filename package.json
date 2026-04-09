@@ -12,12 +12,15 @@
     "@prisma/client": "^5.23.0-dev.19",
     "@types/superagent": "^4.1.15",
     "date-fns": "^2.28.0",
+    "dotenv": "^17.4.1",
     "fetch": "^1.1.0",
     "mssql": "^8.1.0",
     "sqlserver": "^0.0.2-security",
     "superagent": "^7.1.2",
     "superagent-charset": "^1.2.0",
-    "superagent-throttle": "^1.0.1"
+    "superagent-throttle": "^1.0.1",
+    "winston": "^3.19.0",
+    "winston-daily-rotate-file": "^5.0.0"
   },
   "name": "newtechready",
   "description": "基于NODEJS+TYPESCRIPT 将已有的功能从C/S架构迁移到 B/S架构\r 基本依赖：\r     npm i -D typescrit\r     npm install mssql",

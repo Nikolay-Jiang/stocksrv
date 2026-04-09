@@ -4,7 +4,7 @@ generator client {
 
 datasource db {
   provider = "sqlserver"
-  url      = "sqlserver://;initial catalog=TechReadyDB;user=sa;password=;trustServerCertificate=true;"
+  url      = env("DATABASE_URL")
 }
 
 model t_Code {
@@ -82,6 +82,18 @@ model t_Plan {
   PlanID     String    @id(map: "PK_T_PLAN") @db.NVarChar(50)
   PlanName   String?   @db.NVarChar(50)
   CreateName DateTime? @db.DateTime
+}
+
+model t_Predict {
+  PredictKey   String    @id(map: "PK_t_Predict") @db.NVarChar(50)
+  StockCode    String?   @db.NVarChar(50)
+  PredictTime  DateTime? @db.DateTimeOffset
+  Type         String?   @db.NVarChar(50)
+  CurrentPrice Decimal?  @db.Decimal(6, 2)
+  RSI7         Decimal?  @db.Decimal(6, 2)
+  RSI14        Decimal?  @db.Decimal(6, 2)
+  BackTest     String?   @db.NVarChar(50)
+  Memo         String?   @db.NVarChar(500)
 }
 
 model t_SimTradeLog {
@@ -164,16 +176,4 @@ model t_User {
   CreateAt  DateTime? @db.DateTimeOffset
   UpdateAt  DateTime? @db.DateTimeOffset
   IsEnabled Boolean   @default(true, map: "DF_t_User_IsEnabled")
-}
-
-model t_Predict {
-  PredictKey   String    @id(map: "PK_t_Predict") @db.NVarChar(50)
-  StockCode    String?   @db.NVarChar(50)
-  PredictTime  DateTime? @db.DateTimeOffset
-  Type         String?   @db.NVarChar(50)
-  CurrentPrice Decimal?  @db.Decimal(6, 2)
-  RSI7         Decimal?  @db.Decimal(6, 2)
-  RSI14        Decimal?  @db.Decimal(6, 2)
-  BackTest     String?   @db.NVarChar(50)
-  Memo         String?   @db.NVarChar(500)
 }

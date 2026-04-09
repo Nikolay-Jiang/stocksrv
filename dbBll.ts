@@ -1,13 +1,14 @@
 import { Prisma, PrismaClient, t_StockDayLog, t_StockNameList, t_StockDayReport } from '@prisma/client'
+import logger from './logger';
 // import { GetStockCurrent2, Stock, GetStockCurrent } from './sinaStockInterface'
 import { Stock, GetStockCurrent } from './tencentStockInterface'
 
 
 
-const prisma = new PrismaClient();
+export const prisma = new PrismaClient();
 
-export function GetTradeList(): any {
-    var res = prisma.t_TradeLog.findMany({ select: { KeyID: true } })
+ export function GetTradeList(): any {
+    let res = prisma.t_TradeLog.findMany({ select: { KeyID: true } })
     return res;
 }
 
@@ -16,7 +17,7 @@ export async function AddStockDayLog(Lstock: Stock[]) {
 
     let dTemp = new Date()
     let Lstockdaylog: Array<t_StockDayLog> = [];
-    console.log("开始写入..." + dTemp.toString())
+    logger.info("开始写入..." + dTemp.toString())
     for (let index = 0; index < Lstock.length; index++) {
 
         const element = Lstock[index];
@@ -41,7 +42,7 @@ export async function AddStockDayLog(Lstock: Stock[]) {
 
 
         try {
-            var mDayLog: t_StockDayLog = {
+            let mDayLog: t_StockDayLog = {
                 StockCode: element.stockcode,
                 SearchTime: element.SearchTime,
                 CurrentPrice: new Prisma.Decimal(element.CurrentPrice.length > 7 ? "9999" : element.CurrentPrice),
@@ -59,7 +60,7 @@ export async function AddStockDayLog(Lstock: Stock[]) {
             }
             Lstockdaylog[index] = mDayLog;
         } catch (error) {
-            console.log("error:" + Lstock[index].stockcode + error)
+            logger.info("error:" + Lstock[index].stockcode + error)
         }
 
     }
@@ -70,7 +71,7 @@ export async function AddStockDayLog(Lstock: Stock[]) {
         return;
     }
 
-    console.log(Lstockdaylog.length);
+    logger.info(Lstockdaylog.length);
     await BulkStockDayLog(Lstockdaylog);
 
 }
@@ -84,7 +85,7 @@ export async function GetStockDayLogForRpt(dBegin: Date, dEnd: Date): Promise<t_
     dBegin.setHours(dBegin.getHours() + 8);
     dEnd.setHours(dEnd.getHours() + 8);
     const sqlstr = `SELECT * FROM t_StockDayLog WHERE searchtime > = '${dBegin.getFullYear() + "-" + (dBegin.getMonth() + 1) + "-" + dBegin.getDate() + " " + "14:59:59"}' and searchtime < '${dEnd.getFullYear() + "-" + (dEnd.getMonth() + 1) + "-" + dEnd.getDate() + " " + "00:00:00"}';`;
-    console.log(sqlstr);
+    logger.info(sqlstr);
     const result = await prisma.$queryRawUnsafe<t_StockDayLog[]>(sqlstr)
     return result;
 
@@ -100,7 +101,7 @@ export async function GetStockDayLogForRpt(dBegin: Date, dEnd: Date): Promise<t_
     //     FROM t_StockDayLog 
     //     WHERE searchtime >= $1 AND searchtime < $2;
     // `;
-    // console.log(`Query: ${sql}, Parameters: [${startTime}, ${endTime}]`);
+    // logger.info(`Query: ${sql}, Parameters: [${startTime}, ${endTime}]`);
 
     // // 使用参数化查询
     // const result = await prisma.$queryRaw<t_StockDayLog[]>(sql, startTime, endTime);
@@ -123,14 +124,14 @@ export function GetStockNameByCode(sCode: string): any {
 }
 
 export function GetAllStockCode(): any {
-    var res = prisma.t_StockNameList.findMany({ select: { StockCode: true } })
+    const res = prisma.t_StockNameList.findMany({ select: { StockCode: true } })
     return res;
 }
 
 //更新所有板块 股票名称
 export async function UpdateAllCodeName() {
-    var iBegin = 600000;
-    var iEnd = 604000;
+    let iBegin = 600000;
+    let iEnd = 604000;
     UpdateCodeName(iBegin, iEnd, "sh");//沪指
 
     //更新沪创业
@@ -156,14 +157,14 @@ async function UpdateCodeName(iBegin: number, iEnd: number, sCodeType: string) {
     for (let i = iBegin; i < iEnd; i++) {
         let sCode: string = sCodeType == "sz0" ? GetSZCode(i) : sCodeType + i.toString();
 
-        var mStock = await GetStockCurrent(sCode);
+        const mStock = await GetStockCurrent(sCode);
 
 
         if (mStock != null && mStock.stockcode != undefined) {
-            var mStockCurrent = await GetStockNameByCode(sCode);
+            const mStockCurrent = await GetStockNameByCode(sCode);
             // mStockCurrent
             if (mStockCurrent == null) {
-                console.log("addNew:" + sCode + "|" + mStock.stockname);
+                logger.info("addNew:" + sCode + "|" + mStock.stockname);
                 const post = await prisma.t_StockNameList.create({
                     data: {
                         StockCode: sCode,
@@ -174,7 +175,7 @@ async function UpdateCodeName(iBegin: number, iEnd: number, sCodeType: string) {
             }
             else {
                 if (mStockCurrent.StockName != mStock.stockname) {
-                    console.log("update!" + sCode + "|" + mStock.stockname)
+                    logger.info("update!" + sCode + "|" + mStock.stockname)
 
                     const post = await prisma.t_StockNameList.update({
                         where: { StockCode: sCode },
@@ -221,10 +222,10 @@ export async function AddStockDayReport(mStockDayReport: t_StockDayReport) {
                 TradingPriceAvg: mStockDayReport.TradingPriceAvg
             },
         })
-        // console.log(mStockDayReport.StockCode+"|"+mStockDayReport.ReportDay)
+        // logger.info(mStockDayReport.StockCode+"|"+mStockDayReport.ReportDay)
     } catch (error) {
-        console.log(mStockDayReport.StockCode + "|" + mStockDayReport.Rate);
-        console.log("error:" + error);
+        logger.info(mStockDayReport.StockCode + "|" + mStockDayReport.Rate);
+        logger.info("error:" + error);
     }
 
 }
@@ -235,7 +236,7 @@ export async function BulkStockDayLog(LStockDayLog: t_StockDayLog[]) {
         const res = await prisma.t_StockDayLog.createMany({ data: LStockDayLog }
         )
     } catch (error) {
-        console.log("error:" + error);
+        logger.info("error:" + error);
     }
 
 }
@@ -247,7 +248,7 @@ export async function BulkStockDayReport(LStockDayReport: t_StockDayReport[]) {
         const res = await prisma.t_StockDayReport.createMany({ data: LStockDayReport }
         )
     } catch (error) {
-        console.log("error:" + error);
+        logger.info("error:" + error);
     }
 
 }
@@ -258,7 +259,7 @@ export async function BulkUpdateStockDayReport(LStockDayReport: t_StockDayReport
         const res = await prisma.t_StockDayReport.updateMany({ data: LStockDayReport }
         )
     } catch (error) {
-        console.log("error:" + error);
+        logger.info("error:" + error);
     }
 }
 
@@ -276,13 +277,13 @@ export async function UpdateDayRpt(stockdayrpt: t_StockDayReport) {
             data: stockdayrpt
         })
     } catch (error) {
-        console.log("error:", stockdayrpt.StockCode, stockdayrpt.BB, stockdayrpt.WIDTH, error);
+        logger.info("error:", stockdayrpt.StockCode, stockdayrpt.BB, stockdayrpt.WIDTH, error);
     }
 }
 
 export async function GetStockdayRptByCondition(endday: Date, stockcode: string, count: number): Promise<t_StockDayReport[]> {
     const sqlstr = `SELECT top ${count} * FROM t_StockDayReport WHERE ReportDay <= '${endday.getFullYear() + "-" + (endday.getMonth() + 1) + "-" + endday.getDate() + " " + "00:00:00"}' and stockcode='${stockcode}' order by ReportDay desc;`;
-    // console.log(sqlstr);
+    // logger.info(sqlstr);
     const result = await prisma.$queryRawUnsafe<t_StockDayReport[]>(sqlstr)
     return result;
 }
