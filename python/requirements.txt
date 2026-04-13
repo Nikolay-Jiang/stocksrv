@@ -1,0 +1,5 @@
+akshare>=1.14.0
+pymssql>=2.2.0
+pandas>=2.0.0
+tenacity>=8.2.0
+python-dotenv>=1.0.0
