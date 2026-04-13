@@ -1,4 +1,4 @@
-import { Prisma, PrismaClient, t_StockDayLog, t_StockNameList, t_StockDayReport } from '@prisma/client'
+import { Prisma, PrismaClient, t_StockDayLog, t_StockNameList, t_StockDayReport, t_StockKLine } from '@prisma/client'
 import logger from './logger';
 // import { GetStockCurrent2, Stock, GetStockCurrent } from './sinaStockInterface'
 import { Stock, GetStockCurrent } from './tencentStockInterface'
@@ -293,4 +293,63 @@ export function GetStockDayReportList(): any {
     return prisma.t_StockDayReport.findMany()
 }
 
+//#region KLineStorage
+export async function GetKLineData(stockCode: string, period: string, startDate: string, endDate: string): Promise<t_StockKLine[]> {
+    const res = await prisma.t_StockKLine.findMany({
+        where: {
+            StockCode: stockCode,
+            Period: period,
+            TradeTime: {
+                gte: new Date(startDate),
+                lte: new Date(endDate)
+            }
+        },
+        orderBy: { TradeTime: 'asc' }
+    });
+    return res;
+}
+
+export async function GetKLineDataMulti(stockCodes: string[], period: string, startDate: string, endDate: string): Promise<t_StockKLine[]> {
+    const res = await prisma.t_StockKLine.findMany({
+        where: {
+            StockCode: { in: stockCodes },
+            Period: period,
+            TradeTime: {
+                gte: new Date(startDate),
+                lte: new Date(endDate)
+            }
+        },
+        orderBy: { TradeTime: 'asc' }
+    });
+    return res;
+}
+
+export async function GetLatestKLine(stockCode: string, period: string, count: number): Promise<t_StockKLine[]> {
+    const res = await prisma.t_StockKLine.findMany({
+        where: {
+            StockCode: stockCode,
+            Period: period
+        },
+        orderBy: { TradeTime: 'desc' },
+        take: count
+    });
+    return res;
+}
+
+export async function GetKLineDateRange(stockCode: string, period: string): Promise<{ min: Date, max: Date } | null> {
+    const result = await prisma.t_StockKLine.aggregate({
+        _min: { TradeTime: true },
+        _max: { TradeTime: true },
+        where: {
+            StockCode: stockCode,
+            Period: period
+        }
+    });
+    const min: Date | null = result._min.TradeTime;
+    const max: Date | null = result._max.TradeTime;
+    if (!min || !max) {
+        return null;
+    }
+    return { min, max };
+}
 //#endregion
