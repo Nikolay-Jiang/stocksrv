@@ -1,8 +1,7 @@
-import { resolveTxt } from 'dns';
 import logger from './logger';
-import { resolve } from 'path';
-import superagent, { parse } from 'superagent';
-import { Prisma, PrismaClient, t_StockNameList } from '@prisma/client'
+import superagent from 'superagent';
+import { t_StockNameList } from '@prisma/client'
+import { parseTencentTime, todayWallClock } from './timeUtil';
 
 // const dataurl = "https://qt.gtimg.cn/q=sz002415";
 const dataurl = "https://qt.gtimg.cn/q=";
@@ -153,7 +152,7 @@ function Parse(orginText: string): Stock {
         // logger.info("lala:"+iBuyTotal+"&"+iSelltotal);
 
         mStock.SellBuyRate = ((iBuyTotal - iSelltotal) / (iBuyTotal + iSelltotal) * 100).toFixed(2).toString() + "%";
-        mStock.SearchTime = convertToDate(sTemp[30]);
+        mStock.SearchTime = parseTencentTime(sTemp[30]);
 
         return mStock;
 
@@ -166,24 +165,6 @@ function Parse(orginText: string): Stock {
     return mStock;
 }
 
-
-const convertToDate = (input: string): Date => {
-    // 验证输入是否为有效的14位字符串
-    if (!/^\d{14}$/.test(input)) {
-      throw new Error("输入字符串格式不正确，应为14位数字");
-    }
-  
-    // 提取年月日时分秒
-    const year = parseInt(input.slice(0, 4), 10);
-    const month = parseInt(input.slice(4, 6), 10) - 1; // 月份从0开始
-    const day = parseInt(input.slice(6, 8), 10);
-    const hour = parseInt(input.slice(8, 10), 10);
-    const minute = parseInt(input.slice(10, 12), 10);
-    const second = parseInt(input.slice(12, 14), 10);
-  
-    // 创建并返回日期对象
-    return new Date(year, month, day, hour, minute, second);
-  };
 
 function ParseStockCode(orginText: string): string {
 
@@ -227,14 +208,12 @@ export class Stock {
     stockcode!: string;
     stockname!: string;
 
-    SearchTime: Date = new Date();
+    SearchTime: Date = todayWallClock();
     CurrentPrice!: string;
     YesterdayClosingPrice!: string;
     TodayOpeningPrice!: string;
-    HighLowRate!: string;
     TodayMinPrice!: string;
     TodayMaxPrice!: string;
-    HighLowPrice!: string;
     TradingVolume!: string;
     TradingPrice!: string;
     BidBuyPrice!: string;

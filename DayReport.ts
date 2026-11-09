@@ -1,23 +1,18 @@
 import { t_StockDayReport, Prisma } from '@prisma/client'
 import logger from './logger';
 import { GetAllStockCode, GetStockDayLogForRpt, AddStockDayReport, prisma } from './dbBll'
+import { addDays, dateOnly, todayWallClock } from './timeUtil';
 
 
 async function main() {
 
-  let ReportDay = new Date();
-  ReportDay.setHours(8)
-  ReportDay.setMinutes(0)
-  ReportDay.setSeconds(0)
-  ReportDay.setMilliseconds(0)
+  const ReportDay = dateOnly(todayWallClock());
   DoDayRpt(ReportDay);
 }
 
 async function DoDayRpt(dReportDay: Date) {
 
-  let dEnd = new Date();
-  Object.assign(dEnd, dReportDay)
-  dEnd.setDate(dEnd.getDate() + 1);
+  const dEnd = addDays(dReportDay, 1);
 
   // 1.GetDayLogListForRpt(RptDay,rptday+1)
   let Lstockdaylog = await GetStockDayLogForRpt(dReportDay, dEnd)
@@ -61,10 +56,10 @@ async function DoDayRpt(dReportDay: Date) {
       memo = "停牌";
     }
 
-    if (mDayLogTemp.TradingVolume != undefined && mDayLogTemp.TradingPrice != undefined) {
-      tradingvol = parseFloat(mDayLogTemp.TradingVolume);
-      tradingprice = parseFloat(mDayLogTemp.TradingPrice);
-      if (parseFloat(mDayLogTemp.TradingVolume) > 0) {
+    if (mDayLogTemp.TradingVolume != null && mDayLogTemp.TradingPrice != null) {
+      tradingvol = Number(mDayLogTemp.TradingVolume);
+      tradingprice = Number(mDayLogTemp.TradingPrice);
+      if (Number(mDayLogTemp.TradingVolume) > 0) {
         if (mDayLogTemp.StockCode.includes("sh688")) {//科创版的交易量精确度个位数,需要修正
           tradingprice=tradingprice*100;
         }

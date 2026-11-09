@@ -1,6 +1,6 @@
 # stocksrv
 
-基于 Node.js + TypeScript 的股票数据采集服务，定时从腾讯股票接口获取行情数据并写入 MSSQL 数据库。
+基于 Node.js + TypeScript 的股票数据采集服务，定时从腾讯股票接口获取行情数据并写入 MariaDB 数据库。
 
 ## 功能特性
 
@@ -19,6 +19,7 @@ stocksrv/
 ├── DayReport2.ts         # 补报表功能
 ├── DayReportTech.ts      # 技术指标计算 (BOLL/RSI)
 ├── tencentStockInterface.ts  # 腾讯股票接口
+├── timeUtil.ts           # 北京时间（墙上时间）工具
 ├── UpdateAllCodeName.ts  # 更新股票代码列表
 ├── logger.ts             # winston 日志模块
 ├── prisma/
@@ -31,7 +32,8 @@ stocksrv/
 ## 环境要求
 
 - Node.js >= 16
-- MSSQL 数据库
+- MariaDB 10.11（Prisma 使用 `mysql` provider）
+- 运行环境时区为 `Asia/Shanghai`（业务时间按北京时间墙上时间读写）
 
 ## 安装
 
@@ -56,9 +58,11 @@ npx prisma generate
 在 `.env` 文件中配置以下环境变量：
 
 ```env
-DATABASE_URL="sqlserver://host:port;initial catalog=DB;user=sa;password=password;trustServerCertificate=true;"
+DATABASE_URL="mysql://user:password@host:3306/TechReadyDB"
 LOG_LEVEL=info
 ```
+
+> 数据库结构由迁移脚本管理，本项目只用 Prisma 生成 Client。需要同步结构时使用 `npx prisma db pull`，不要执行 `prisma migrate`。
 
 ## 运行
 
@@ -132,7 +136,7 @@ const range = await GetKLineDateRange('sh600519', '1d')
 - **运行时**: Node.js
 - **语言**: TypeScript
 - **ORM**: Prisma
-- **数据库**: MSSQL
+- **数据库**: MariaDB (Prisma `mysql` provider)
 - **日志**: winston + winston-daily-rotate-file
 - **数据源**: 腾讯股票接口
 

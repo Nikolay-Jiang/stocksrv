@@ -1,32 +1,28 @@
 import { t_StockDayReport, Prisma } from '@prisma/client'
 import logger from './logger';
 import { GetAllStockCode, GetStockDayLogForRpt, BulkStockDayReport, prisma } from './dbBll'
+import { addDays, dateOnly } from './timeUtil';
 
 //补报表功能，请修改开始和结束时间
 async function main() {
 
-    let beginday: Date = new Date("2021-12-12");
-    let endday: Date = new Date("2022-01-01")
+    let beginday: Date = new Date(Date.UTC(2021, 11, 12));
+    const endday: Date = new Date(Date.UTC(2022, 0, 1));
 
     while (endday > beginday) {
-        let ReportDay = beginday;
-        ReportDay.setHours(8);
-        logger.info(ReportDay.toLocaleDateString());
+        const ReportDay = dateOnly(beginday);
+        logger.info(ReportDay.toISOString().slice(0, 10));
 
         await DoDayRpt(ReportDay);
 
-        beginday.setDate(beginday.getDate() + 1);
+        beginday = addDays(beginday, 1);
     }
 
 }
 
 async function DoDayRpt(dReportDay: Date) {
 
-
-
-    let dEnd = new Date(dReportDay.toUTCString());
-    Object.assign(dEnd, dReportDay)
-    dEnd.setDate(dEnd.getDate() + 1);
+    const dEnd = addDays(dReportDay, 1);
 
     // 1.GetDayLogListForRpt(RptDay,rptday+1)
     const Lstockdaylog = await GetStockDayLogForRpt(dReportDay, dEnd)
@@ -71,10 +67,10 @@ async function DoDayRpt(dReportDay: Date) {
             memo = "停牌";
         }
 
-        if (mDayLogTemp.TradingVolume != undefined && mDayLogTemp.TradingPrice != undefined) {
-            tradingvol = parseFloat(mDayLogTemp.TradingVolume);
-            tradingprice = parseFloat(mDayLogTemp.TradingPrice);
-            if (parseFloat(mDayLogTemp.TradingVolume) > 0) {
+        if (mDayLogTemp.TradingVolume != null && mDayLogTemp.TradingPrice != null) {
+            tradingvol = Number(mDayLogTemp.TradingVolume);
+            tradingprice = Number(mDayLogTemp.TradingPrice);
+            if (Number(mDayLogTemp.TradingVolume) > 0) {
                 tradingpriceAvg = tradingprice / tradingvol
             }
         }
@@ -101,7 +97,7 @@ async function DoDayRpt(dReportDay: Date) {
             RSI14: new Prisma.Decimal(-1)
 
         }
-        LdayReport[i] = mDayRpt;
+        LdayReport.push(mDayRpt);
 
         //await AddStockDayReport(mDayRpt);
     }
