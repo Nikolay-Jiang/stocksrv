@@ -1,198 +1,119 @@
+// 数据库结构由迁移工作区（/home/sql2mysql）的 SQL 脚本管理。
+// 本文件仅用于生成 Prisma Client，不要使用 prisma migrate 修改库结构。
+// 目标库：MariaDB 10.11 / TechReadyDB（Prisma 使用 mysql provider）。
+
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlserver"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
-model t_Code {
-  CodeKey      String    @id(map: "PK_T_CODE") @db.NVarChar(50)
-  CodeName     String?   @db.NVarChar(100)
-  CodeType     String?   @db.NVarChar(50)
-  DisplayIndex Int?
-  IsEnable     Boolean?
-  CreateDate   DateTime? @db.DateTime
-}
-
-model t_Comment {
-  KeyID      String    @id(map: "PK_T_COMMENT") @db.NVarChar(50)
-  CommentTxt String?   @db.NVarChar(500)
-  CreateDate DateTime? @db.DateTime
-  UserID     String?   @db.NVarChar(50)
-}
-
-model t_Fund {
-  FundKey    String    @id(map: "PK_T_FUND") @db.NVarChar(50)
-  FundType   String?   @db.NVarChar(50)
-  Money      Decimal?  @db.Decimal(10, 2)
-  CreateDate DateTime? @db.DateTime
-  UserID     String?   @db.NVarChar(50)
-}
-
-model t_FundHoldings {
-  StockCode          String   @db.NVarChar(50)
-  ReportDay          DateTime @db.DateTime
-  NumOfFund          Int?
-  TotalHoldings      Decimal? @db.Decimal(5, 2)
-  TotalValue         Decimal? @db.Decimal(5, 2)
-  PercentTotal       Decimal? @db.Decimal(3, 2)
-  PercentOutstanding Decimal? @db.Decimal(3, 2)
-
-  @@id([StockCode, ReportDay], map: "PK_t_FundHoldings")
-}
-
-model t_Log {
-  KeyID   String    @id(map: "PK_T_LOG") @db.NVarChar(128)
-  Target  String?   @db.NVarChar(50)
-  Content String?   @db.NVarChar(500)
-  LogType String?   @db.NVarChar(50)
-  LogDate DateTime? @db.DateTime
-}
-
 model t_Observer {
-  StockCode String   @db.NVarChar(50)
-  UserID    String   @db.NVarChar(50)
-  Rate      Decimal? @db.Decimal(3, 2)
-  RatePrice Decimal? @db.Decimal(5, 2)
-  TradeVol  Decimal? @db.Decimal(18, 2)
-  PlanID    String?  @db.NVarChar(50)
-  CreateAt  DateTime @db.DateTimeOffset
+  StockCode String   @db.Char(8)
+  UserID    String   @db.VarChar(64)
+  Rate      Decimal? @db.Decimal(9, 4)
+  RatePrice Decimal? @db.Decimal(12, 4)
+  TradeVol  Decimal? @db.Decimal(20, 2)
+  PlanID    String?  @db.VarChar(64)
+  CreateAt  DateTime @db.DateTime(6)
 
-  @@id([StockCode, UserID], map: "PK_t_Observer_1")
-}
-
-model t_ObserverRule {
-  KeyID     Int     @id(map: "PK_T_OBSERVERRULE")
-  RuleName  String? @db.NVarChar(50)
-  RuleValue String? @db.NVarChar(50)
-  RuleType  String? @db.NVarChar(50)
-}
-
-model t_ObserverSys {
-  StockCode String    @id(map: "PK_T_OBSERVERSYS") @db.NVarChar(50)
-  Rate      String?   @db.NVarChar(50)
-  RatePrice String?   @db.NVarChar(50)
-  AddDate   DateTime? @db.DateTime
-  LastDate  DateTime? @db.DateTime
-}
-
-model t_Plan {
-  PlanID     String    @id(map: "PK_T_PLAN") @db.NVarChar(50)
-  PlanName   String?   @db.NVarChar(50)
-  CreateName DateTime? @db.DateTime
+  @@id([StockCode, UserID])
+  @@index([UserID], map: "idx_user")
 }
 
 model t_Predict {
-  PredictKey   String    @id(map: "PK_t_Predict") @db.NVarChar(50)
-  StockCode    String?   @db.NVarChar(50)
-  PredictTime  DateTime? @db.DateTimeOffset
-  Type         String?   @db.NVarChar(50)
-  CurrentPrice Decimal?  @db.Decimal(6, 2)
-  RSI7         Decimal?  @db.Decimal(6, 2)
-  RSI14        Decimal?  @db.Decimal(6, 2)
-  BackTest     String?   @db.NVarChar(50)
-  Memo         String?   @db.NVarChar(500)
-}
+  PredictKey   String    @id @db.VarChar(64)
+  StockCode    String?   @db.Char(8)
+  PredictTime  DateTime? @db.DateTime(6)
+  Type         String?   @db.VarChar(16)
+  CurrentPrice Decimal?  @db.Decimal(12, 4)
+  RSI7         Decimal?  @db.Decimal(9, 4)
+  RSI14        Decimal?  @db.Decimal(9, 4)
+  BackTest     String?   @db.VarChar(64)
+  Memo         String?   @db.VarChar(500)
 
-model t_SimTradeLog {
-  KeyID       String    @id(map: "PK_T_SIMTRADELOG") @db.NVarChar(128)
-  StockCode   String?   @db.NVarChar(50)
-  TradeDate   DateTime? @db.DateTime
-  TradePrice  Decimal?  @db.Decimal(10, 2)
-  TradeVolume Int?
-  Cost        Decimal?  @db.Decimal(10, 2)
-  CreateDate  DateTime? @db.DateTime
-  IsSell      Boolean?
+  @@index([PredictTime], map: "idx_predict_time")
+  @@index([StockCode, PredictTime], map: "idx_stock_time")
+  @@index([Type, PredictTime], map: "idx_type_time")
 }
 
 model t_StockDayLog {
-  StockCode             String   @db.NVarChar(50)
-  SearchTime            DateTime @db.DateTime
-  CurrentPrice          Decimal? @db.Decimal(6, 2)
-  YesterdayClosingPrice Decimal? @db.Decimal(6, 2)
-  TodayOpeningPrice     Decimal? @db.Decimal(6, 2)
-  HighLowRate           String?  @db.NVarChar(50)
-  TodayMinPrice         Decimal? @db.Decimal(6, 2)
-  TodayMaxPrice         Decimal? @db.Decimal(6, 2)
-  HighLowPrice          String?  @db.NVarChar(50)
-  TradingVolume         String?  @db.NVarChar(50)
-  TradingPrice          String?  @db.NVarChar(50)
-  BidBuyPrice           Decimal? @db.Decimal(6, 2)
-  BidSellPrice          Decimal? @db.Decimal(6, 2)
-  SellBuyRate           String?  @db.NVarChar(50)
+  StockCode             String   @db.Char(8)
+  SearchTime            DateTime @db.DateTime(3)
+  CurrentPrice          Decimal? @db.Decimal(12, 4)
+  YesterdayClosingPrice Decimal? @db.Decimal(12, 4)
+  TodayOpeningPrice     Decimal? @db.Decimal(12, 4)
+  TodayMinPrice         Decimal? @db.Decimal(12, 4)
+  TodayMaxPrice         Decimal? @db.Decimal(12, 4)
+  TradingVolume         Decimal? @db.Decimal(20, 2)
+  TradingPrice          Decimal? @db.Decimal(20, 2)
+  BidBuyPrice           Decimal? @db.Decimal(12, 4)
+  BidSellPrice          Decimal? @db.Decimal(12, 4)
+  SellBuyRate           Decimal? @db.Decimal(9, 4)
 
-  @@id([StockCode, SearchTime], map: "PK_T_STOCKDAYLOG1")
+  @@id([StockCode, SearchTime])
+  @@index([SearchTime], map: "idx_searchtime")
 }
 
 model t_StockDayReport {
-  StockCode       String   @db.NVarChar(50)
-  ReportDay       DateTime @db.DateTime
-  TodayOpenPrice  Decimal? @db.Decimal(6, 2)
-  TodayClosePrice Decimal? @db.Decimal(6, 2)
-  TodayMaxPrice   Decimal? @db.Decimal(6, 2)
-  TodayMinPrice   Decimal? @db.Decimal(6, 2)
-  Rate            Decimal? @db.Decimal(4, 4)
-  RatePrice       Decimal? @db.Decimal(6, 2)
-  TradingVol      Decimal? @db.Decimal(18, 2)
-  TradingPrice    Decimal? @db.Decimal(18, 2)
-  TradingPriceAvg Decimal? @db.Decimal(6, 2)
-  Memo            String?  @db.NVarChar(200)
-  MA              Decimal? @db.Decimal(6, 2)
-  bollUP          Decimal? @db.Decimal(6, 2)
-  bollDown        Decimal? @db.Decimal(6, 2)
-  WIDTH           Decimal? @db.Decimal(6, 2)
-  BB              Decimal? @db.Decimal(5, 4)
-  RSI7            Decimal? @db.Decimal(6, 2)
-  RSI14           Decimal? @db.Decimal(6, 2)
+  StockCode       String   @db.Char(8)
+  ReportDay       DateTime @db.Date
+  TodayOpenPrice  Decimal? @db.Decimal(12, 4)
+  TodayClosePrice Decimal? @db.Decimal(12, 4)
+  TodayMaxPrice   Decimal? @db.Decimal(12, 4)
+  TodayMinPrice   Decimal? @db.Decimal(12, 4)
+  Rate            Decimal? @db.Decimal(9, 6)
+  RatePrice       Decimal? @db.Decimal(12, 4)
+  TradingVol      Decimal? @db.Decimal(20, 2)
+  TradingPrice    Decimal? @db.Decimal(20, 2)
+  TradingPriceAvg Decimal? @db.Decimal(12, 4)
+  Memo            String?  @db.VarChar(200)
+  MA              Decimal? @db.Decimal(12, 4)
+  bollUP          Decimal? @db.Decimal(12, 4)
+  bollDown        Decimal? @db.Decimal(12, 4)
+  WIDTH           Decimal? @db.Decimal(12, 4)
+  BB              Decimal? @db.Decimal(9, 6)
+  RSI7            Decimal? @db.Decimal(9, 4)
+  RSI14           Decimal? @db.Decimal(9, 4)
 
-  @@id([StockCode, ReportDay], map: "PK_T_STOCKDAYREPORT")
-}
-
-model t_StockNameList {
-  StockCode  String    @id(map: "PK_T_STOCKNAMELIST") @db.NVarChar(50)
-  StockName  String?   @db.NVarChar(100)
-  LastUpdate DateTime? @db.DateTime
+  @@id([StockCode, ReportDay])
+  @@index([ReportDay], map: "idx_reportday")
 }
 
 model t_StockKLine {
-  StockCode    String   @db.NVarChar(50)
-  Period       String   @db.NVarChar(10)
-  TradeTime    DateTime @db.DateTime
-  OpenPrice    Decimal? @db.Decimal(10, 2)
-  ClosePrice   Decimal? @db.Decimal(10, 2)
-  HighPrice    Decimal? @db.Decimal(10, 2)
-  LowPrice     Decimal? @db.Decimal(10, 2)
-  Volume       Decimal? @db.Decimal(18, 2)
-  Turnover     Decimal? @db.Decimal(18, 2)
-  Amplitude    Decimal? @db.Decimal(8, 4)
-  ChangeRate   Decimal? @db.Decimal(8, 4)
-  ChangeAmount Decimal? @db.Decimal(10, 2)
-  TurnoverRate Decimal? @db.Decimal(8, 4)
+  StockCode    String   @db.Char(8)
+  Period       String   @db.Char(2)
+  TradeTime    DateTime @db.DateTime(3)
+  OpenPrice    Decimal? @db.Decimal(12, 4)
+  ClosePrice   Decimal? @db.Decimal(12, 4)
+  HighPrice    Decimal? @db.Decimal(12, 4)
+  LowPrice     Decimal? @db.Decimal(12, 4)
+  Volume       Decimal? @db.Decimal(20, 2)
+  Turnover     Decimal? @db.Decimal(20, 2)
+  ChangeRate   Decimal? @db.Decimal(9, 6)
+  ChangeAmount Decimal? @db.Decimal(12, 4)
 
-  @@id([StockCode, Period, TradeTime], map: "PK_t_StockKLine")
-  @@index([StockCode, Period, TradeTime], map: "IX_t_StockKLine_Query")
+  @@id([StockCode, Period, TradeTime])
+  @@index([Period, TradeTime], map: "idx_period_time")
 }
 
-model t_TradeLog {
-  KeyID       String    @id(map: "PK_T_TRADELOG") @db.NVarChar(128)
-  StockCode   String?   @db.NVarChar(50)
-  TradeDate   DateTime? @db.DateTime
-  TradePrice  Decimal?  @db.Decimal(10, 2)
-  TradeVolume Int?
-  Cost        Decimal?  @db.Decimal(10, 2)
-  CreateDate  DateTime? @db.DateTime
-  IsSell      Boolean?
-  UserID      String?   @db.NVarChar(50)
+model t_StockNameList {
+  StockCode  String    @id @db.Char(8)
+  StockName  String    @db.VarChar(100)
+  LastUpdate DateTime? @db.DateTime(0)
 }
 
 model t_User {
-  UserID    String    @id(map: "PK_T_USER") @db.NVarChar(50)
-  UserName  String?   @db.NVarChar(50)
-  Password  String    @default("6666666", map: "DF_t_User_Password") @db.NVarChar(100)
-  RoleID    Int       @default(1, map: "DF_t_User_RoleID")
-  CreateAt  DateTime? @db.DateTimeOffset
-  UpdateAt  DateTime? @db.DateTimeOffset
-  IsEnabled Boolean   @default(true, map: "DF_t_User_IsEnabled")
+  UserID    String    @id @db.VarChar(64)
+  UserName  String    @db.VarChar(64)
+  Password  String    @db.VarChar(100)
+  RoleID    Int
+  CreateAt  DateTime? @db.DateTime(6)
+  UpdateAt  DateTime? @db.DateTime(6)
+  IsEnabled Boolean
+
+  @@index([UserName], map: "idx_username")
 }

@@ -2,70 +2,100 @@ import { Prisma, PrismaClient, t_StockDayLog, t_StockNameList, t_StockDayReport,
 import logger from './logger';
 // import { GetStockCurrent2, Stock, GetStockCurrent } from './sinaStockInterface'
 import { Stock, GetStockCurrent } from './tencentStockInterface'
+import { dateOnly, formatWallClock, todayWallClock } from './timeUtil';
 
 
 
 export const prisma = new PrismaClient();
 
- export function GetTradeList(): any {
-    let res = prisma.t_TradeLog.findMany({ select: { KeyID: true } })
-    return res;
+/** 数值字符串 → Decimal；空值/NaN/非法值返回 null */
+function toDecimalOrNull(value: string | null | undefined): Prisma.Decimal | null {
+    if (value == null) return null;
+    const text = String(value).trim();
+    if (!text || text == '-' || /^nan$/i.test(text)) return null;
+    try {
+        return new Prisma.Decimal(text);
+    } catch {
+        return null;
+    }
+}
+
+/** 价格字符串 → Decimal；超长（异常行情）按旧逻辑记为 9999，空值返回 null */
+function toPrice(value: string | null | undefined): Prisma.Decimal | null {
+    if (value == null) return null;
+    const text = String(value).trim();
+    if (!text) return null;
+    try {
+        return new Prisma.Decimal(text.length > 7 ? "9999" : text);
+    } catch {
+        return null;
+    }
+}
+
+/** 百分比字符串（如 "12.34%"）→ Decimal；"NaN%" 返回 null */
+function toPercent(value: string | null | undefined): Prisma.Decimal | null {
+    if (value == null) return null;
+    const text = String(value).trim().replace(/%$/, '');
+    if (!text || /^nan$/i.test(text)) return null;
+    try {
+        return new Prisma.Decimal(text);
+    } catch {
+        return null;
+    }
 }
 
 //#region StockDayLog
 export async function AddStockDayLog(Lstock: Stock[]) {
 
-    let dTemp = new Date()
-    let Lstockdaylog: Array<t_StockDayLog> = [];
-    logger.info("开始写入..." + dTemp.toString())
+    const dTemp = todayWallClock()
+    const Lstockdaylog: Array<t_StockDayLog> = [];
+    logger.info("开始写入..." + formatWallClock(dTemp))
     for (let index = 0; index < Lstock.length; index++) {
 
         const element = Lstock[index];
-        if (element.stockname.indexOf("退") >= 0) {//过滤已退市
+        if (element == null || !element.stockcode) {
+            continue;
+        }
+        if (!element.stockname || element.stockname.indexOf("退") >= 0) {//过滤已退市
+            continue;
+        }
+        if (!(element.SearchTime instanceof Date) || isNaN(element.SearchTime.getTime())) {
             continue;
         }
 
-        if (element.SearchTime.getMonth() < dTemp.getMonth()) {//停牌或已退市
+        if (element.SearchTime.getUTCMonth() < dTemp.getUTCMonth()) {//停牌或已退市
             continue;
         }
 
-        if (element.SearchTime.getDate() != dTemp.getDate()) {//停牌或已退市
+        if (element.SearchTime.getUTCDate() != dTemp.getUTCDate()) {//停牌或已退市
             continue;
         }
 
-        if (element.SearchTime.getHours() < dTemp.getHours()) {//判断停牌情况，9点会被记录一次，后续跳过
+        if (element.SearchTime.getUTCHours() < dTemp.getUTCHours()) {//判断停牌情况，9点会被记录一次，后续跳过
             continue;
         }
-
-        element.SearchTime.setHours(element.SearchTime.getHours() + 8);//修正只存UTC 问题
-
-
 
         try {
-            let mDayLog: t_StockDayLog = {
+            const mDayLog: t_StockDayLog = {
                 StockCode: element.stockcode,
                 SearchTime: element.SearchTime,
-                CurrentPrice: new Prisma.Decimal(element.CurrentPrice.length > 7 ? "9999" : element.CurrentPrice),
-                YesterdayClosingPrice: new Prisma.Decimal(element.YesterdayClosingPrice.length > 7 ? "9999" : element.YesterdayClosingPrice),
-                TodayOpeningPrice: new Prisma.Decimal(element.TodayOpeningPrice.length > 7 ? "9999" : element.TodayOpeningPrice),
-                TodayMinPrice: new Prisma.Decimal(element.TodayMinPrice.length > 7 ? "9999" : element.TodayMinPrice),
-                TodayMaxPrice: new Prisma.Decimal(element.TodayMaxPrice.length > 7 ? "9999" : element.TodayMaxPrice),
-                TradingVolume: element.TradingVolume,
-                TradingPrice: element.TradingPrice,
-                BidBuyPrice: new Prisma.Decimal(element.BidBuyPrice),
-                BidSellPrice: new Prisma.Decimal(element.BidSellPrice),
-                SellBuyRate: element.SellBuyRate,
-                HighLowRate: null,
-                HighLowPrice: null
+                CurrentPrice: toPrice(element.CurrentPrice),
+                YesterdayClosingPrice: toPrice(element.YesterdayClosingPrice),
+                TodayOpeningPrice: toPrice(element.TodayOpeningPrice),
+                TodayMinPrice: toPrice(element.TodayMinPrice),
+                TodayMaxPrice: toPrice(element.TodayMaxPrice),
+                TradingVolume: toDecimalOrNull(element.TradingVolume),
+                TradingPrice: toDecimalOrNull(element.TradingPrice),
+                BidBuyPrice: toDecimalOrNull(element.BidBuyPrice),
+                BidSellPrice: toDecimalOrNull(element.BidSellPrice),
+                SellBuyRate: toPercent(element.SellBuyRate)
             }
-            Lstockdaylog[index] = mDayLog;
+            Lstockdaylog.push(mDayLog);
         } catch (error) {
             logger.info("error:" + Lstock[index].stockcode + error)
         }
 
     }
-
-    Lstockdaylog = Lstockdaylog.filter(res => { return res != undefined })
 
     if (Lstockdaylog.length == 0) {
         return;
@@ -78,36 +108,31 @@ export async function AddStockDayLog(Lstock: Stock[]) {
 
 export async function GetStockDayLogForRpt(dBegin: Date, dEnd: Date): Promise<t_StockDayLog[]> {
 
-    dBegin = new Date(dBegin.getFullYear() + "-" + (dBegin.getMonth() + 1) + "-" + dBegin.getDate() + " " + "14:59:59");
-    dEnd = new Date(dEnd.getFullYear() + "-" + (dEnd.getMonth() + 1) + "-" + dEnd.getDate() + " " + "00:00:00")
+    // 每个交易日在 14:59:59 之后只保留最后一笔累计快照
+    const start = new Date(Date.UTC(
+        dBegin.getUTCFullYear(), dBegin.getUTCMonth(), dBegin.getUTCDate(), 14, 59, 59
+    ));
+    const end = new Date(Date.UTC(
+        dEnd.getUTCFullYear(), dEnd.getUTCMonth(), dEnd.getUTCDate(), 0, 0, 0
+    ));
 
-    //处理存取时只认utc 问题
-    dBegin.setHours(dBegin.getHours() + 8);
-    dEnd.setHours(dEnd.getHours() + 8);
-    const sqlstr = `SELECT * FROM t_StockDayLog WHERE searchtime > = '${dBegin.getFullYear() + "-" + (dBegin.getMonth() + 1) + "-" + dBegin.getDate() + " " + "14:59:59"}' and searchtime < '${dEnd.getFullYear() + "-" + (dEnd.getMonth() + 1) + "-" + dEnd.getDate() + " " + "00:00:00"}';`;
-    logger.info(sqlstr);
-    const result = await prisma.$queryRawUnsafe<t_StockDayLog[]>(sqlstr)
-    return result;
+    const rows = await prisma.t_StockDayLog.findMany({
+        where: {
+            SearchTime: { gte: start, lt: end },
+        },
+    });
 
-    // // 格式化时间范围并处理 UTC 偏移问题
-    // const startTime = addHours(new Date(`${format(dBegin, 'yyyy-MM-dd')} 14:59:59`), 8);
-    // const endTime = addHours(new Date(`${format(dEnd, 'yyyy-MM-dd')} 00:00:00`), 8);
+    // 同一只股票可能命中 15:00 / 15:05 等多笔，取最新一笔
+    const latest = new Map<string, t_StockDayLog>();
+    for (const row of rows) {
+        const current = latest.get(row.StockCode);
+        if (current == null || row.SearchTime > current.SearchTime) {
+            latest.set(row.StockCode, row);
+        }
+    }
 
-
-
-    // // 使用参数化查询，防止 SQL 注入
-    // const sql = `
-    //     SELECT * 
-    //     FROM t_StockDayLog 
-    //     WHERE searchtime >= $1 AND searchtime < $2;
-    // `;
-    // logger.info(`Query: ${sql}, Parameters: [${startTime}, ${endTime}]`);
-
-    // // 使用参数化查询
-    // const result = await prisma.$queryRaw<t_StockDayLog[]>(sql, startTime, endTime);
-    // return result;
-
-
+    logger.info(`GetStockDayLogForRpt rows=${rows.length} stocks=${latest.size}`);
+    return Array.from(latest.values());
 }
 
 //#endregion
@@ -253,16 +278,6 @@ export async function BulkStockDayReport(LStockDayReport: t_StockDayReport[]) {
 
 }
 
-export async function BulkUpdateStockDayReport(LStockDayReport: t_StockDayReport[]) {
-
-    try {
-        const res = await prisma.t_StockDayReport.updateMany({ data: LStockDayReport }
-        )
-    } catch (error) {
-        logger.info("error:" + error);
-    }
-}
-
 export async function UpdateDayRpt(stockdayrpt: t_StockDayReport) {
 
     try {
@@ -282,10 +297,14 @@ export async function UpdateDayRpt(stockdayrpt: t_StockDayReport) {
 }
 
 export async function GetStockdayRptByCondition(endday: Date, stockcode: string, count: number): Promise<t_StockDayReport[]> {
-    const sqlstr = `SELECT top ${count} * FROM t_StockDayReport WHERE ReportDay <= '${endday.getFullYear() + "-" + (endday.getMonth() + 1) + "-" + endday.getDate() + " " + "00:00:00"}' and stockcode='${stockcode}' order by ReportDay desc;`;
-    // logger.info(sqlstr);
-    const result = await prisma.$queryRawUnsafe<t_StockDayReport[]>(sqlstr)
-    return result;
+    return prisma.t_StockDayReport.findMany({
+        where: {
+            StockCode: stockcode,
+            ReportDay: { lte: dateOnly(endday) },
+        },
+        orderBy: { ReportDay: 'desc' },
+        take: Math.max(1, Math.trunc(count)),
+    });
 }
 
 

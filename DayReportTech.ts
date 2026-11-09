@@ -1,21 +1,13 @@
 import { t_StockDayReport, Prisma } from '@prisma/client'
 import logger from './logger';
 import { GetStockdayRptByCondition, UpdateDayRpt, GetAllStockCode, prisma } from './dbBll'
+import { addDays, dateOnly, todayWallClock } from './timeUtil';
 
 
 async function main() {
 
-    let beginday: Date = new Date();
-    beginday.setHours(8)
-    beginday.setMinutes(0)
-    beginday.setSeconds(0)
-    beginday.setMilliseconds(0)
-    let endday: Date = new Date();
-    endday.setHours(8)
-    endday.setMinutes(0)
-    endday.setSeconds(0)
-    endday.setMilliseconds(0)
-    endday.setDate(endday.getDate()+1);
+    let beginday: Date = dateOnly(todayWallClock());
+    let endday: Date = addDays(beginday, 1);
 
     
     const LstockName = await GetAllStockCode()
@@ -24,11 +16,6 @@ async function main() {
     }
 
     while (endday > beginday) {
-        let ReportDay = beginday;
-        // ReportDay.setHours(8);
-        // logger.info(ReportDay.toLocaleDateString());
-
-        let LdayReport: Array<t_StockDayReport> = [];
 
         for (let i = 0; i < LstockName.length; i++) {
             const element = LstockName[i];
@@ -63,8 +50,10 @@ async function main() {
             if (Number(mDayRpt.TodayMinPrice) < boll.down) { memo += "|穿透下线" }
             if (Number(mDayRpt.TodayMaxPrice) > boll.up) { memo += "|穿透上线" }
 
-            let bb: number = (Number(mDayRpt.TodayClosePrice) - boll.down) / (boll.up - boll.down);
-            bb = bb;
+            let bb: number = 0;
+            if (boll.up != boll.down) {
+                bb = (Number(mDayRpt.TodayClosePrice) - boll.down) / (boll.up - boll.down);
+            }
 
             memo += "||RSI:";
             memo += rsi.analysis;
@@ -73,16 +62,17 @@ async function main() {
             mDayRpt.MA = new Prisma.Decimal(boll.ma);
             mDayRpt.bollUP = new Prisma.Decimal(boll.up);
             mDayRpt.bollDown = new Prisma.Decimal(boll.down);
-            mDayRpt.Rate = new Prisma.Decimal((Number(mDayRpt.RatePrice) / Number(mDayRpt.TodayMinPrice)).toFixed(4));
+            const minPrice = Number(mDayRpt.TodayMinPrice);
+            mDayRpt.Rate = new Prisma.Decimal(minPrice > 0 ? (Number(mDayRpt.RatePrice) / minPrice).toFixed(4) : "0");
             mDayRpt.BB = new Prisma.Decimal(bb.toFixed(4));
-            mDayRpt.WIDTH = new Prisma.Decimal(((boll.up - boll.down) / boll.ma).toFixed(2));
+            mDayRpt.WIDTH = new Prisma.Decimal(boll.ma != 0 ? ((boll.up - boll.down) / boll.ma).toFixed(2) : "0");
             mDayRpt.Memo = memo;
 
-            UpdateDayRpt(mDayRpt)
+            await UpdateDayRpt(mDayRpt)
 
         }
 
-        beginday.setDate(beginday.getDate() + 1);
+        beginday = addDays(beginday, 1);
     }
 
     logger.info(new Date().toString() + "DoTech 被调用,并完成");
